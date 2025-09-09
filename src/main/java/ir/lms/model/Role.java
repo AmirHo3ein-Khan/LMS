@@ -3,6 +3,7 @@ package ir.lms.model;
 import ir.lms.model.base.BaseEntity;import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -26,7 +27,7 @@ public class Role extends BaseEntity<Long> {
     @NotNull
     private String name;
 
-    @ManyToMany(mappedBy = "roles")
+    @ManyToMany
     private List<Person> persons = new ArrayList<>();
 
 }

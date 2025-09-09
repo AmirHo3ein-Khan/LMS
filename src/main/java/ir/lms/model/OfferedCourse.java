@@ -41,11 +41,11 @@ public class OfferedCourse extends BaseEntity<Long> {
 
     @ManyToOne
     @JoinColumn(name = "teacher_id")
-    private Teacher teacher;
+    private Person teacher;
 
-    @ManyToMany
-    @JoinTable(name = "STUDENT_COURSE")
-    private List<Student> students;
+    @ManyToMany(mappedBy = "offeredCourses")
+    private List<Person> student = new ArrayList<>();
+
 
     @ManyToOne
     @JoinColumn(name = "term_id")

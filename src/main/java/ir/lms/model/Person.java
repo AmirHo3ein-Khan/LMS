@@ -12,7 +12,9 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -20,7 +22,6 @@ import java.util.List;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class Person extends BaseEntity<Long> {
 
     @NotBlank(message = "first name cannot be empty")
@@ -36,10 +37,24 @@ public class Person extends BaseEntity<Long> {
     @NotNull(message = "National code cannot be null")
     private String nationalCode;
 
+    @Column(unique = true)
+    @NotBlank(message = "National code cannot be empty")
+    @NotNull(message = "National code cannot be null")
+    private String phoneNumber;
+
+    @ManyToMany(mappedBy = "persons" , fetch = FetchType.EAGER)
+    private Set<Role> roles = new HashSet<>();
+
+    @OneToOne(mappedBy = "person", cascade = CascadeType.PERSIST)
+    private Account account;
+
+    @OneToMany(mappedBy = "person")
+    private List<ExamInstance> exams = new ArrayList<>();
+
     @ManyToMany
-    @JoinTable(name = "PERSON_ROLE")
-    private List<Role> roles = new ArrayList<>();
+    @JoinTable(name = "person_courses")
+    private List<OfferedCourse> offeredCourses = new ArrayList<>();
 
     @OneToOne
-    private Account account;
+    private Major major;
 }

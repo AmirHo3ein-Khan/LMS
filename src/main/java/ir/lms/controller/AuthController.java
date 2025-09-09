@@ -1,7 +1,11 @@
 package ir.lms.controller;
 
-import ir.lms.model.dto.*;
-import ir.lms.service.AccountService;
+import ir.lms.util.dto.ApiResponseDTO;
+import ir.lms.util.dto.auth.AddRoleRequest;
+import ir.lms.util.dto.auth.AuthRequestDTO;
+import ir.lms.util.dto.auth.AuthResponseDTO;
+import ir.lms.service.AuthService;
+import ir.lms.util.dto.auth.RegisterRequestDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,50 +16,38 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-    private final AccountService accountService;
+    private final AuthService authService;
 
-    public AuthController(AccountService accountService) {
-        this.accountService = accountService;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
 
-    /**
-     * Register new user account
-     *
-     * @param request user registration details
-     * @return {@link ResponseEntity} containing success message and status {@code 201 CREATED}
-     */
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponseDto> register(@RequestBody RegisterRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(accountService.registerAccount(request));
+    @PostMapping("/student/register")
+    public ResponseEntity<ApiResponseDTO> studentRegister(@RequestBody RegisterRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.studentRegister(request));
     }
 
-    /**
-     * Authentication user and returns jwt access and refresh token.
-     *
-     * @param request login credential (username , password)
-     * @return {@link AuthResponseDTO} containing access and refresh tokens with staus {@code 200 OK}
-     */
+
+    @PostMapping("/teacher/register")
+    public ResponseEntity<ApiResponseDTO> teacherRegister(@RequestBody RegisterRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.teacherRegister(request));
+    }
+
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody AuthRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.OK).body(accountService.login(request));
+        return ResponseEntity.status(HttpStatus.OK).body(authService.login(request));
     }
 
-    @PostMapping("/addRole")
-    public ResponseEntity<ApiResponseDto> addRoleToPerson(@RequestBody AddRoleRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(accountService.addRoleToPerson(request));
+    @PostMapping("/add/role")
+    public ResponseEntity<ApiResponseDTO> addRoleToPerson(@RequestBody AddRoleRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.addRoleToPerson(request));
     }
-
-    /**
-     * Refresh the access token using a valid refresh token.
-     * @param req DTO containing refresh token.
-     * @return {@link AuthResponseDTO} containing access and refresh token with status {@code 200 OK}
-     */
 
 //    @PostMapping("/refresh")
 //    public ResponseEntity<AuthResponseDTO> refresh(@RequestBody RefreshTokenRequestDTO req) {
-//        return ResponseEntity.ok(userService.refreshToken(req));
+//        return ResponseEntity.ok(accountService.refreshToken(req));
 //    }
 
 }

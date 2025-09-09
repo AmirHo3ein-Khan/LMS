@@ -13,8 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -24,6 +23,10 @@ import java.util.List;
 @NoArgsConstructor
 public class Account extends BaseEntity<Long> {
 
+    @Column(unique = true)
+    private UUID authId;
+
+    @Column(unique = true)
     @NotBlank(message = "Email cannot be empty")
     @NotNull(message = "email cannot be null")
     @Email(message = "Invalid email format")
@@ -47,4 +50,11 @@ public class Account extends BaseEntity<Long> {
     @OneToOne
     @JoinColumn(name = "person_id")
     private Person person;
+
+    @OneToOne
+    private Role activeRole;
+
+    //todo session token : when login get session token(uuid), when login set , when logout remove (date) (has expired time)
+
+    // inner log (crud login logout) elk log
 }

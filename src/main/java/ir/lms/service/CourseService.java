@@ -1,4 +1,7 @@
 package ir.lms.service;
 
-public interface CourseService {
+import ir.lms.util.dto.course.CourseDTO;
+import ir.lms.service.base.BaseService;
+
+public interface CourseService extends BaseService<CourseDTO, Long> {
 }

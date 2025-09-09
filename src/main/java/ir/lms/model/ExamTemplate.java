@@ -4,6 +4,7 @@ import ir.lms.model.base.BaseEntity;
 import ir.lms.model.enums.ExamState;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,14 @@ import java.util.List;
 @AllArgsConstructor
 @SuperBuilder
 public class ExamTemplate extends BaseEntity<Long> {
+
+    @Size(max = 20, message = "title should not more than 50 character!")
+    @NotNull(message = "title cannot be null")
+    private String title;
+
+    @Size(max = 50, message = "description should not more than 50 character!")
+    @NotNull(message = "description cannot be null")
+    private String description;
 
     @NotNull(message = "lastname cannot be null")
     private Integer examTime;

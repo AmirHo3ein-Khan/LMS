@@ -1,4 +1,4 @@
-package ir.lms.service.jwt;
+package ir.lms.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @Service
 public class JwtService {
@@ -28,8 +30,21 @@ public class JwtService {
         this.publicKey = KeyUtils.loadPublicKey("keys/local_only/public_key.pem");
     }
 
-    public String generateAccessToken(final String username) {
-        final Map<String, Object> claims = Map.of(TOKEN_TYPE, "ACCESS_TOKEN");
+     /*
+
+      If a person has only one role, they authenticate and directly receive access for that role.
+
+      If a person has multiple roles, the login response should include the list of their available roles.
+
+      The person then selects one of these roles. Once selected, the backend generates a new token
+      tied specifically to the chosen role.
+
+      That token is then used to grant access based on the selected role’s permissions.
+
+     */
+
+    public String generateAccessToken(final String username , String activeRole) {
+        final Map<String, Object> claims = Map.of(TOKEN_TYPE, "ACCESS_TOKEN" ,  "activeRole", activeRole);
         return buildToken(username, claims, this.accessTokenExpiration);
     }
 
@@ -40,12 +55,12 @@ public class JwtService {
 
     public String buildToken(final String username, final Map<String, Object> claims, final long expiration) {
         return Jwts.builder()
-                   .claims(claims)
-                   .subject(username)
-                   .issuedAt(new Date(System.currentTimeMillis()))
-                   .expiration(new Date(System.currentTimeMillis() + expiration))
-                   .signWith(this.privateKey)
-                   .compact();
+                .claims(claims)
+                .subject(username)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(this.privateKey)
+                .compact();
     }
 
     public boolean isTokenValid(final String token, final String expectedUsername) {
@@ -59,32 +74,37 @@ public class JwtService {
 
     private boolean isTokenExpired(final String token) {
         return extractClaims(token).getExpiration()
-                                   .before(new Date());
+                .before(new Date());
     }
 
-    private Claims extractClaims(final String token) {
+    public Claims extractClaims(final String token) {
         try {
             return Jwts.parser()
-                       .verifyWith(publicKey)
-                       .build()
-                       .parseSignedClaims(token)
-                       .getPayload();
+                    .verifyWith(publicKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (final JwtException e) {
             throw new RuntimeException("Invalid token", e);
         }
     }
 
-    public String refreshAccessToken(final String refreshToken) {
-        final Claims claims = extractClaims(refreshToken);
-
-        if (!"REFRESH_TOKEN".equals(claims.get(TOKEN_TYPE, String.class))) {
-            throw new RuntimeException("Invalid token type");
-        }
-        if (claims.getExpiration().before(new Date())) {
-            throw new RuntimeException("Refresh token expired");
-        }
-
-        final String username = claims.getSubject();
-        return generateAccessToken(username);
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractClaims(token);
+        return claimsResolver.apply(claims);
     }
+
+//    public String refreshAccessToken(final String refreshToken) {
+//        final Claims claims = extractClaims(refreshToken);
+//
+//        if (!"REFRESH_TOKEN".equals(claims.get(TOKEN_TYPE, String.class))) {
+//            throw new RuntimeException("Invalid token type");
+//        }
+//        if (claims.getExpiration().before(new Date())) {
+//            throw new RuntimeException("Refresh token expired");
+//        }
+//
+//        final String username = claims.getSubject();
+//        return generateAccessToken(username);
+//    }
 }

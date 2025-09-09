@@ -1,13 +1,8 @@
 package ir.lms.model;
 
 import ir.lms.model.base.BaseEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,8 +24,14 @@ public class Course extends BaseEntity<Long> {
     @NotNull(message = "title cannot be null")
     private String title;
 
-    @Size(min = 1, max = 10)
+    @Min(value = 1, message = "Unit must be at least 1")
     private Integer unit;
+
+
+    @NotBlank(message = "title cannot be empty")
+    @NotNull(message = "title cannot be null")
+    @Size(max = 50, message = "description should not more than 50 character!")
+    private String description;
 
     @ManyToOne
     @JoinColumn(name = "major_id")

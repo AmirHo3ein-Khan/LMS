@@ -35,7 +35,7 @@ public class ExamInstance extends BaseEntity<Long> {
 
     @ManyToOne
     @JoinColumn(name = "student_id")
-    private Student student;
+    private Person person;
 
     @ManyToOne
     @JoinColumn(name = "exam_id")

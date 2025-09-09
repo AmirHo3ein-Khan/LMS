@@ -1,4 +1,8 @@
 package ir.lms.service;
 
-public interface MajorService {
+import ir.lms.service.base.BaseService;
+import ir.lms.util.dto.major.MajorDTO;
+
+
+public interface MajorService extends BaseService<MajorDTO, Long> {
 }

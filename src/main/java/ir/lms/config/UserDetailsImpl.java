@@ -1,7 +1,6 @@
 package ir.lms.config;
 
 import ir.lms.model.Account;
-import ir.lms.model.Person;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,25 +10,26 @@ import java.util.List;
 
 public class UserDetailsImpl implements UserDetails {
 
-    private final Person person;
+    private final Account account;
 
-    public UserDetailsImpl(Person person) {
-        this.person = person;
+    public UserDetailsImpl(Account account) {
+        this.account = account;
     }
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + person.getRoles().iterator().next()));
+        return List.of(new SimpleGrantedAuthority(account.getActiveRole().getName()));
     }
 
     @Override
     public String getPassword() {
-        return person.getAccount().getPassword();
+        return account.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return person.getAccount().getUsername();
+        return account.getUsername();
     }
 
     @Override
