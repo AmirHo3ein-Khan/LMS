@@ -1,4 +1,7 @@
 package ir.lms.service;
 
-public interface TermService {
+import ir.lms.model.Term;
+import ir.lms.service.base.BaseService;
+
+public interface TermService extends BaseService<Term, Long> {
 }

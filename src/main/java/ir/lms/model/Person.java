@@ -42,10 +42,11 @@ public class Person extends BaseEntity<Long> {
     @NotNull(message = "National code cannot be null")
     private String phoneNumber;
 
-    @ManyToMany(mappedBy = "persons" , fetch = FetchType.EAGER)
-    private Set<Role> roles = new HashSet<>();
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "person_roles")
+    private List<Role> roles = new ArrayList<>();
 
-    @OneToOne(mappedBy = "person", cascade = CascadeType.PERSIST)
+    @OneToOne(mappedBy = "person")
     private Account account;
 
     @OneToMany(mappedBy = "person")
@@ -55,6 +56,6 @@ public class Person extends BaseEntity<Long> {
     @JoinTable(name = "person_courses")
     private List<OfferedCourse> offeredCourses = new ArrayList<>();
 
-    @OneToOne
+    @ManyToOne
     private Major major;
 }

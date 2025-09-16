@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 public class Initializer implements CommandLineRunner {
     private final InitializerService initializerService;
 
+
     public Initializer(InitializerService initializerService) {
         this.initializerService = initializerService;
     }
@@ -16,5 +17,6 @@ public class Initializer implements CommandLineRunner {
     public void run(String... args){
         initializerService.createRolesIfNotExist();
         initializerService.createAdminIfNotExists();
+        initializerService.createMajorIfNotExists();
     }
 }

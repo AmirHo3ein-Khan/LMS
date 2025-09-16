@@ -1,6 +1,15 @@
 package ir.lms.exception;
 
-public record ExceptionResponse(
-        String message
-) {
+import lombok.*;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class ExceptionResponse {
+    private String timestamp;
+    private int status;
+    private String error;
+    private String message;
+    private String path;
 }

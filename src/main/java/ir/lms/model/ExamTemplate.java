@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,9 +31,6 @@ public class ExamTemplate extends BaseEntity<Long> {
     @Size(max = 50, message = "description should not more than 50 character!")
     @NotNull(message = "description cannot be null")
     private String description;
-
-    @NotNull(message = "lastname cannot be null")
-    private Integer examTime;
 
     @NotNull(message = "Exam start date cannot be null")
     private LocalDateTime examStartTime;

@@ -27,7 +27,7 @@ public class Role extends BaseEntity<Long> {
     @NotNull
     private String name;
 
-    @ManyToMany
+    @ManyToMany(mappedBy = "roles")
     private List<Person> persons = new ArrayList<>();
 
 }

@@ -1,46 +1,66 @@
 package ir.lms.controller;
 
+import ir.lms.dto.ApiResponseDTO;
+import ir.lms.dto.major.MajorDTO;
+import ir.lms.dto.mapper.MajorMapper;
+import ir.lms.model.Major;
 import ir.lms.service.MajorService;
-import ir.lms.util.dto.major.MajorDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/major")
 public class MajorController {
+
     private final MajorService majorService;
+    private final MajorMapper majorMapper;
 
-    public MajorController(MajorService majorService) {
+    public MajorController(MajorService majorService, MajorMapper majorMapper) {
         this.majorService = majorService;
+        this.majorMapper = majorMapper;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<MajorDTO> createMajor(@RequestBody MajorDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(majorService.create(dto));
+    public ResponseEntity<MajorDTO> save(@RequestBody MajorDTO dto) {
+        Major major = majorService.persist(majorMapper.toEntity(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(majorMapper.toDto(major));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<MajorDTO> updateMajor(@PathVariable Long id, @RequestBody MajorDTO dto) {
-        return ResponseEntity.ok(majorService.update(id, dto));
+    public ResponseEntity<MajorDTO> update(@PathVariable Long id , @RequestBody MajorDTO dto) {
+        Major major = majorService.persist(majorMapper.toEntity(dto));
+        major.setId(id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(majorMapper.toDto(major));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMajor(@PathVariable Long id) {
+    public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
         majorService.delete(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponseDTO("Major deleted success." , true));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<MajorDTO> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(majorService.findById(id));
+        return ResponseEntity.status(HttpStatus.OK).body(majorMapper.toDto(majorService.findById(id)));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<List<MajorDTO>> findAllMajor() {
-        return ResponseEntity.ok(majorService.findAll());
+    public ResponseEntity<List<MajorDTO>> findAll() {
+        List<MajorDTO> majors = new ArrayList<>();
+        for (Major m :  majorService.findAll()) {
+            majors.add(majorMapper.toDto(m));
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(majors);
     }
-
 }

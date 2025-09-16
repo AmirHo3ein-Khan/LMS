@@ -1,11 +1,14 @@
 package ir.lms.service.base;
 
+import ir.lms.model.base.BaseEntity;
+
+import java.io.Serializable;
 import java.util.List;
 
-public interface BaseService <DTO , ID> {
-    DTO create(DTO dto);
-    DTO update(ID id , DTO dto);
+public interface BaseService <T extends BaseEntity<ID>, ID extends Serializable> {
+    T persist(T t);
     void delete(ID id);
-    DTO findById(ID id);
-    List<DTO> findAll();
+    T findById(ID id);
+    List<T> findAll();
+
 }

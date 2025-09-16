@@ -30,19 +30,6 @@ public class JwtService {
         this.publicKey = KeyUtils.loadPublicKey("keys/local_only/public_key.pem");
     }
 
-     /*
-
-      If a person has only one role, they authenticate and directly receive access for that role.
-
-      If a person has multiple roles, the login response should include the list of their available roles.
-
-      The person then selects one of these roles. Once selected, the backend generates a new token
-      tied specifically to the chosen role.
-
-      That token is then used to grant access based on the selected role’s permissions.
-
-     */
-
     public String generateAccessToken(final String username , String activeRole) {
         final Map<String, Object> claims = Map.of(TOKEN_TYPE, "ACCESS_TOKEN" ,  "activeRole", activeRole);
         return buildToken(username, claims, this.accessTokenExpiration);

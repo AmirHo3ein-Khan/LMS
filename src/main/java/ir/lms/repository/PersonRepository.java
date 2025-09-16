@@ -11,5 +11,6 @@ import java.util.Set;
 @Repository
 public interface PersonRepository extends JpaRepository<Person,Long> {
     boolean existsByNationalCode(String nationalCode);
+    boolean existsByPhoneNumber(String phoneNumber);
     boolean existsByRolesContains(Role role);
 }

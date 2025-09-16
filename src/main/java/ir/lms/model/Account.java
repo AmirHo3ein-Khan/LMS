@@ -27,12 +27,6 @@ public class Account extends BaseEntity<Long> {
     private UUID authId;
 
     @Column(unique = true)
-    @NotBlank(message = "Email cannot be empty")
-    @NotNull(message = "email cannot be null")
-    @Email(message = "Invalid email format")
-    private String email;
-
-    @Column(unique = true)
     @NotBlank(message = "Username cannot be empty")
     @NotNull(message = "Username cannot be null")
     @Size(min = 6, max = 20, message = "Username must be between 3 and 20 characters")
@@ -51,10 +45,11 @@ public class Account extends BaseEntity<Long> {
     @JoinColumn(name = "person_id")
     private Person person;
 
-    @OneToOne
+    @ManyToOne
     private Role activeRole;
 
     //todo session token : when login get session token(uuid), when login set , when logout remove (date) (has expired time)
 
     // inner log (crud login logout) elk log
+
 }

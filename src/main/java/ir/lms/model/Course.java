@@ -24,6 +24,8 @@ public class Course extends BaseEntity<Long> {
     @NotNull(message = "title cannot be null")
     private String title;
 
+    private Boolean active;
+
     @Min(value = 1, message = "Unit must be at least 1")
     private Integer unit;
 

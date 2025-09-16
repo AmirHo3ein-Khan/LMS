@@ -1,14 +1,18 @@
 package ir.lms.service.impl;
 
-import ir.lms.exception.AccessNotApproveException;
-import ir.lms.exception.RoleNotFoundException;
+import ir.lms.dto.auth.AuthRequestDTO;
+import ir.lms.dto.auth.AuthResponseDTO;
+import ir.lms.dto.auth.ChangeRoleRequestDTO;
+import ir.lms.exception.AccessDeniedException;
+import ir.lms.exception.DuplicateException;
+import ir.lms.exception.EntityNotFoundException;
 import ir.lms.model.*;
 import ir.lms.model.enums.RegisterState;
 import ir.lms.repository.*;
 import ir.lms.service.AuthService;
 import ir.lms.config.JwtService;
-import ir.lms.util.dto.ApiResponseDTO;
-import ir.lms.util.dto.auth.*;
+import ir.lms.service.base.BaseServiceImpl;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -17,12 +21,16 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Set;
+import java.security.Principal;
+import java.util.*;
 
 
 @Service
-public class AuthServiceImpl implements AuthService {
+public class AuthServiceImpl extends BaseServiceImpl<Person, Long> implements AuthService {
+
+    private final static String NOT_FOUND = "%s not found!";
+    private final static String EXIST = "Already exists!";
+
     private final AuthenticationManager authenticationManager;
     private final AccountRepository accountRepository;
     private final PersonRepository personRepository;
@@ -30,7 +38,11 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
     private final JwtService jwtService;
 
-    public AuthServiceImpl(AuthenticationManager authenticationManager, AccountRepository accountRepository, PersonRepository personRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository, JwtService jwtService) {
+    protected AuthServiceImpl(JpaRepository<Person, Long> repository, AuthenticationManager authenticationManager,
+                              AccountRepository accountRepository, RoleRepository roleRepository,
+                              JwtService jwtService, PasswordEncoder passwordEncoder,
+                              PersonRepository personRepository) {
+        super(repository);
         this.authenticationManager = authenticationManager;
         this.accountRepository = accountRepository;
         this.personRepository = personRepository;
@@ -39,47 +51,6 @@ public class AuthServiceImpl implements AuthService {
         this.jwtService = jwtService;
     }
 
-
-    @Override
-    public ApiResponseDTO studentRegister(RegisterRequestDTO registerRequestDTO) {
-        Role role = roleRepository.findByName("STUDENT")
-                .orElseThrow(() -> new RoleNotFoundException("Role not found"));
-        return register(registerRequestDTO , role);
-    }
-
-    @Override
-    public ApiResponseDTO teacherRegister(RegisterRequestDTO registerRequestDTO) {
-        Role role = roleRepository.findByName("TEACHER")
-                .orElseThrow(() -> new RoleNotFoundException("Role not found"));
-        return register(registerRequestDTO , role);
-    }
-
-
-    private ApiResponseDTO register(RegisterRequestDTO request , Role role) {
-
-        Role defualtRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new RoleNotFoundException("Role not found"));
-
-        Person person = Person.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .nationalCode(request.getNationalCode())
-                .phoneNumber(request.getPhoneNumber())
-                .roles(Set.of(defualtRole , role))
-                .build();
-
-        Account account = Account.builder()
-                .username(person.getPhoneNumber())
-                .password(passwordEncoder.encode(person.getNationalCode()))
-                .email(request.getEmail())
-                .activeRole(defualtRole)
-                .state(RegisterState.WAITING)
-                .build();
-
-        person.setAccount(account);
-        personRepository.save(person);
-        return new ApiResponseDTO("register success.", true);
-    }
 
     @Override
     public AuthResponseDTO login(AuthRequestDTO request) {
@@ -93,84 +64,103 @@ public class AuthServiceImpl implements AuthService {
         final UserDetails userDetails = (UserDetails) auth.getPrincipal();
 
         final Account account = accountRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
+                .orElseThrow(() -> new UsernameNotFoundException(String.format(NOT_FOUND, "Account")));
 
-        if (account.getState().equals(RegisterState.CONFIRM)) {
+        if (account.getState().equals(RegisterState.ACTIVE)) {
 
+            account.setAuthId(UUID.randomUUID());
+            accountRepository.save(account);
 
             final String token = jwtService.generateAccessToken(account.getUsername(), account.getActiveRole().getName());
 
             final String refreshToken = jwtService.generateRefreshToken(account.getUsername());
 
-            return AuthResponseDTO.builder().accessToken(token).refreshToken(refreshToken).tokenType("Barrier ").build();
+            return AuthResponseDTO.builder().accessToken(token)
+                    .refreshToken(refreshToken).tokenType("Barrier ")
+                    .activeRole(account.getActiveRole().getName()).build();
         }
 
-        throw new AccessNotApproveException("Access Not Approve !");
-    }
-
-
-
-
-    @Override
-    public ApiResponseDTO addRoleToPerson(AddRoleRequest request) {
-//        Role role = roleRepository.findByName(request.role().toUpperCase())
-//                .orElseThrow(() -> new RoleNotFoundException("Role not found!"));
-//        Person person = personRepository.findById(request.personId())
-//                .orElseThrow(() -> new PersonNotFound("Person not found!"));
-//        person.getRoles().add(role);
-//        role.getPersons().add(person);
-//        personRepository.save(person);
-//        roleRepository.save(role);
-//        return new ApiResponseDTO("Role added successfully!", true);
-        return null;
+        throw new AccessDeniedException("You don't have access. Your Account not active!");
     }
 
     @Override
-    public AuthResponseDTO changeRole(ChooseRoleRequestDTO request, String username) {
-//        Account account = accountRepository.findByUsername(username)
-//                .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
-//
-//        boolean hasRole = account.getPerson().getRoles()
-//                .stream()
-//                .anyMatch(r -> r.getName().equalsIgnoreCase(request.role()));
-//
-//        if (!hasRole) {
-//            throw new PersonAccessDeniedException("Person does not have this role: " + request.role());
-//        }
-//        List<String> roles = account.getPerson().getRoles().stream().map(Role::getName).toList();
-//
-//        final String token = jwtService.generateAccessToken(account.getUsername() , roles , request.role().toUpperCase());
-//        String refreshToken = jwtService.generateRefreshToken(account.getUsername());
-//
-//        return new AuthResponseDTO(
-//                token,
-//                refreshToken,
-//                "Bearer",
-//                List.of(request.role())
-//        );
-        return null;
+    public void changeRole(String username , String roleName) {
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(String.format(NOT_FOUND, "Account")));
+
+        Role role = roleRepository.findByName(roleName.toUpperCase())
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Role")));
+
+        if (account.getPerson().getRoles().contains(role)) {
+            account.setActiveRole(role);
+            accountRepository.save(account);
+        }
+        else throw new AccessDeniedException("Don't have permission to change to this role!");
     }
 
     @Override
-    public List<Account> getAccounts() {
-        return accountRepository.findAll();
+    public void addRoleToPerson(String role, Long personId) {
+        Role founded = roleRepository.findByName(role.toUpperCase())
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Role")));
+        Person person = personRepository.findById(personId)
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Person")));
+        person.getRoles().add(founded);
+        personRepository.save(person);
     }
 
     @Override
-    public List<Person> getPersons() {
-        return personRepository.findAll();
+    public void activeAccount(Long id) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException(String.format(NOT_FOUND, "Account")));
+        account.setState(RegisterState.ACTIVE);
+        accountRepository.save(account);
     }
 
-//    @Override
-//    public AuthResponseDTO refreshToken(RefreshTokenRequestDTO req) {
-//        final String newAccessToken = this.jwtService.refreshAccessToken(req.refreshToken());
-//        final String tokenType = "Bearer";
-//        return AuthenticationResponse.builder()
-//                .accessToken(newAccessToken)
-//                .refreshToken(req.refreshToken())
-//                .tokenType(tokenType)
-//                .build();
-//    }
+    @Override
+    public void inactiveAccount(Long id) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Account")));
+        account.setState(RegisterState.INACTIVE);
+        accountRepository.save(account);
+    }
 
+    @Override
+    public List<Role> getPersonRoles(Principal principal) {
+        String username = principal.getName();
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(String.format(NOT_FOUND, "Username")));
+        return account.getPerson().getRoles();
+    }
+
+
+    @Override
+    protected void prePersist(Person person) {
+        Role role = roleRepository.findByName("USER")
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Role")));
+        if (personRepository.existsByNationalCode(person.getNationalCode())
+                || personRepository.existsByPhoneNumber(person.getPhoneNumber())) {
+            throw new DuplicateException(EXIST);
+        }
+        List<Role> roles = new ArrayList<>();
+        roles.add(role);
+        person.setRoles(roles);
+    }
+
+    @Override
+    protected void postPersist(Person person) {
+        Role role = roleRepository.findByName("USER")
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Role")));
+
+        Account account = Account.builder()
+                .username(person.getNationalCode())
+                .password(passwordEncoder.encode(person.getPhoneNumber()))
+                .state(RegisterState.PENDING)
+                .person(person)
+                .activeRole(role)
+                .build();
+
+        person.setAccount(account);
+        accountRepository.save(account);
+    }
 
 }

@@ -1,61 +1,78 @@
 package ir.lms.service.base;
 
 import ir.lms.model.base.BaseEntity;
-import ir.lms.util.BaseMapper;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.io.Serializable;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public abstract class BaseServiceImpl<E extends BaseEntity<ID>, DTO, ID extends Serializable>
-        implements BaseService<DTO, ID> {
+public abstract class BaseServiceImpl<T extends BaseEntity<ID>, ID extends Serializable>
+        implements BaseService<T, ID> {
 
-    private final JpaRepository<E, ID> repository;
-    private final BaseMapper<E, DTO> mapper;
+    private final String ENTITY_NOT_FOUND = "Entity not found";
 
-    protected BaseServiceImpl(JpaRepository<E, ID> repository, BaseMapper<E, DTO> mapper) {
+    private final JpaRepository<T, ID> repository;
+
+    protected BaseServiceImpl(JpaRepository<T, ID> repository) {
         this.repository = repository;
-        this.mapper = mapper;
     }
 
-
     @Override
-    public DTO create(DTO dto) {
-        E entity = mapper.toEntity(dto);
-        E saved = repository.save(entity);
-        return mapper.toDto(saved);
-    }
-
-
-    @Override
-    public DTO update(ID id, DTO dto) {
-        E entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Entity not found"));
-        E updatedEntity = updateEntity(entity, dto);
-        return mapper.toDto(repository.save(updatedEntity));
+    public T persist(T t) {
+        boolean isNew = t.getId() == null;
+        if (isNew) {
+            prePersist(t);
+        } else {
+            repository.findById(t.getId())
+                    .orElseThrow(() -> new EntityNotFoundException(ENTITY_NOT_FOUND));
+            preUpdate(t);
+        }
+        T saved = repository.save(t);
+        if (isNew) {
+            postPersist(saved);
+        } else {
+            postUpdate(saved);
+        }
+        return saved;
     }
 
     @Override
     public void delete(ID id) {
+        preDelete(id);
         repository.deleteById(id);
+        postDelete(id);
     }
 
     @Override
-    public DTO findById(ID id) {
+    public T findById(ID id) {
         return repository.findById(id)
-                .map(mapper::toDto)
-                .orElseThrow(() -> new RuntimeException("Entity not found"));
+                .orElseThrow(() -> new EntityNotFoundException(ENTITY_NOT_FOUND));
     }
 
     @Override
-    public List<DTO> findAll() {
-        return repository.findAll()
-                .stream()
-                .map(mapper::toDto)
-                .collect(Collectors.toList());
+    public List<T> findAll() {
+        return repository.findAll();
     }
 
-    protected abstract E updateEntity(E entity, DTO dto);
+
+    protected void prePersist(T t){
+    }
+
+    protected void postPersist(T t){
+    }
+
+    protected void preUpdate(T t){
+    }
+
+    protected void postUpdate(T t){
+    }
+
+    protected void preDelete(ID id){
+    }
+
+    protected void postDelete(ID id){
+    }
 }
 
 

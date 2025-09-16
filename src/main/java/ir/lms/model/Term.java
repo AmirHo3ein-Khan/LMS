@@ -25,15 +25,15 @@ import java.util.List;
 @SuperBuilder
 public class Term extends BaseEntity<Long> {
 
-    @NotNull(message = "Term year cannot be null.")
-    private Integer year;
+    @NotNull(message = "Start date cannot be null.")
+    private LocalDate startDate;
+
+    @NotNull(message = "End date cannot be null.")
+    private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Semester cannot be null.")
     private Semester semester;
-
-
-    private LocalDate date;
 
     @OneToMany(mappedBy = "term")
     private List<OfferedCourse> offeredCourses = new ArrayList<>();
