@@ -1,13 +1,16 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.auth.AuthRequestDTO;
-import ir.lms.util.dto.auth.AuthenticationResponse;
-import ir.lms.util.dto.course.CourseDTO;
 import ir.lms.model.*;
 import ir.lms.model.enums.RegisterState;
+import ir.lms.model.enums.Semester;
 import ir.lms.repository.*;
-import org.junit.jupiter.api.*;
+import ir.lms.util.dto.auth.AuthRequestDTO;
+import ir.lms.util.dto.auth.AuthenticationResponse;
+import ir.lms.util.dto.term.TermDTO;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,9 +20,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -28,7 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CourseControllerTest {
+class TermControllerTest {
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -45,22 +52,19 @@ class CourseControllerTest {
     PasswordEncoder passwordEncoder;
 
     @Autowired
-    private CourseRepository courseRepository;
+    private AccountRepository accountRepository;
+
+    @Autowired
+    private TermRepository termRepository;
 
     @Autowired
     private MajorRepository majorRepository;
-
-    @Autowired
-    private AccountRepository accountRepository;
 
     private String accessToken;
 
 
     @BeforeEach
     void beforeEach() throws Exception {
-        courseRepository.deleteAll();
-
-
         Role role = roleRepository.findByName("ADMIN").get();
 
         Person admin = Person.builder().firstName("Admin").lastName("Admin").phoneNumber(randomPhone())
@@ -90,17 +94,16 @@ class CourseControllerTest {
         this.accessToken = authenticationResponse.getAccessToken();
     }
 
-    @AfterEach
-    void afterEach() {
-        courseRepository.deleteAll();
-    }
-
     @Test
     void save() throws Exception {
-        CourseDTO build = CourseDTO.builder().title("Course Title").description("Course Description")
-                .description("Course Description").majorName("Computer").build();
 
-        mockMvc.perform(post("/api/course")
+        TermDTO build = TermDTO.builder()
+                .startDate(LocalDate.of(2025, 11, 10))
+                .endDate(LocalDate.of(2025, 11, 20))
+                .majorName("Computer")
+                .build();
+
+        mockMvc.perform(post("/api/term")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(build))
                         .header("Authorization", "Bearer " + accessToken))
@@ -111,16 +114,20 @@ class CourseControllerTest {
     void update() throws Exception {
         Major major = majorRepository.findByMajorName("Computer").get();
 
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
+        Term term = termRepository.save(Term.builder()
+                .startDate(LocalDate.of(2025, 11, 10))
+                .endDate(LocalDate.of(2025, 11, 20))
+                .semester(Semester.FALL)
+                .major(major).build());
 
-        CourseDTO dto = CourseDTO.builder().title("Course Title2").description("Course Description2")
-                .description("Course Description2").majorName("Computer").build();
+        TermDTO build = TermDTO.builder()
+                .startDate(LocalDate.of(2025, 11, 10))
+                .endDate(LocalDate.of(2025, 11, 20))
+                .majorName("Computer").build();
 
-        mockMvc.perform(put("/api/course/" + course.getId())
+        mockMvc.perform(put("/api/term/" + term.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto))
+                        .content(objectMapper.writeValueAsString(build))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
@@ -129,11 +136,13 @@ class CourseControllerTest {
     void delete() throws Exception {
         Major major = majorRepository.findByMajorName("Computer").get();
 
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
+        Term term = termRepository.save(Term.builder()
+                .startDate(LocalDate.of(2025, 11, 10))
+                .endDate(LocalDate.of(2025, 11, 20))
+                .semester(Semester.FALL)
+                .major(major).build());
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/course/" + course.getId())
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/term/" + term.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
@@ -143,11 +152,13 @@ class CourseControllerTest {
     void findById() throws Exception {
         Major major = majorRepository.findByMajorName("Computer").get();
 
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
+        Term term = termRepository.save(Term.builder()
+                .startDate(LocalDate.of(2025, 11, 10))
+                .endDate(LocalDate.of(2025, 11, 20))
+                .semester(Semester.FALL)
+                .major(major).build());
 
-        mockMvc.perform(get("/api/course/" + course.getId())
+        mockMvc.perform(get("/api/term/" + term.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
@@ -155,19 +166,7 @@ class CourseControllerTest {
 
     @Test
     void findAll() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
-
-
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
-
-        Course course2 = Course.builder().title("Course Title2").description("Course Description2")
-                .description("Course Description2").major(major).build();
-
-        courseRepository.save(course2);
-
-        mockMvc.perform(get("/api/course")
+        mockMvc.perform(get("/api/term")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());

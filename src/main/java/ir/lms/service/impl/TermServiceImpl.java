@@ -6,8 +6,10 @@ import ir.lms.model.Term;
 import ir.lms.repository.TermRepository;
 import ir.lms.service.TermService;
 import ir.lms.service.base.BaseServiceImpl;
+import ir.lms.util.SemesterUtil;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDate;
 
 @Service
@@ -42,6 +44,7 @@ public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements Term
         if (!term.getStartDate().isBefore(term.getEndDate())) {
             throw new IllegalArgumentException(TIME_ILLEGAL);
         }
+        term.setSemester(SemesterUtil.currentSemester());
     }
 
     @Override

@@ -1,10 +1,10 @@
 package ir.lms.controller;
 
-import ir.lms.dto.ApiResponseDTO;
-import ir.lms.dto.mapper.CourseMapper;
+import ir.lms.util.dto.ApiResponseDTO;
+import ir.lms.util.mapper.CourseMapper;
 import ir.lms.model.Course;
 import ir.lms.service.CourseService;
-import ir.lms.dto.course.CourseDTO;
+import ir.lms.util.dto.course.CourseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

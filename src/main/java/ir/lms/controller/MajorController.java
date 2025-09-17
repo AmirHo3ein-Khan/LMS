@@ -1,8 +1,8 @@
 package ir.lms.controller;
 
-import ir.lms.dto.ApiResponseDTO;
-import ir.lms.dto.major.MajorDTO;
-import ir.lms.dto.mapper.MajorMapper;
+import ir.lms.util.dto.ApiResponseDTO;
+import ir.lms.util.dto.major.MajorDTO;
+import ir.lms.util.mapper.MajorMapper;
 import ir.lms.model.Major;
 import ir.lms.service.MajorService;
 import org.springframework.http.HttpStatus;
@@ -37,7 +37,7 @@ public class MajorController {
     public ResponseEntity<MajorDTO> update(@PathVariable Long id , @RequestBody MajorDTO dto) {
         Major major = majorService.persist(majorMapper.toEntity(dto));
         major.setId(id);
-        return ResponseEntity.status(HttpStatus.CREATED).body(majorMapper.toDto(major));
+        return ResponseEntity.ok(majorMapper.toDto(major));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

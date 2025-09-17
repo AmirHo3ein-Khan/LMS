@@ -1,13 +1,16 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
+import ir.lms.util.dto.auth.AuthRequestDTO;
+import ir.lms.util.dto.auth.AuthenticationResponse;
+import ir.lms.util.dto.major.MajorDTO;
 import ir.lms.model.Account;
+import ir.lms.model.Major;
 import ir.lms.model.Person;
 import ir.lms.model.Role;
 import ir.lms.model.enums.RegisterState;
 import ir.lms.repository.AccountRepository;
+import ir.lms.repository.MajorRepository;
 import ir.lms.repository.PersonRepository;
 import ir.lms.repository.RoleRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,12 +23,12 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -52,6 +55,9 @@ class MajorControllerTest {
 
     @Autowired
     private AccountRepository accountRepository;
+
+    @Autowired
+    private MajorRepository majorRepository;
 
     private String accessToken;
 
@@ -88,23 +94,60 @@ class MajorControllerTest {
     }
 
     @Test
-    void save() {
+    void save() throws Exception {
+
+        MajorDTO build = MajorDTO.builder()
+                .majorName("Electronics1")
+                .build();
+
+        mockMvc.perform(post("/api/major")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(build))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated());
     }
 
     @Test
-    void update() {
+    void update() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+
+        MajorDTO build = MajorDTO.builder()
+                .majorName("Mechanic")
+                .build();
+
+        mockMvc.perform(put("/api/major/"+major.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(build))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void delete() {
+    void delete() throws Exception {
+        Major major = majorRepository.save(Major.builder().majorName("Electronics").build());
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/major/"+major.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void findById() {
+    void findById() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+
+        mockMvc.perform(get("/api/major/"+major.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void findAll() {
+    void findAll() throws Exception {
+        mockMvc.perform(get("/api/major")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
     }
 
     private static String randomPhone() {

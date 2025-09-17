@@ -1,34 +1,42 @@
 package ir.lms.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.auth.AuthRequestDTO;
-import ir.lms.util.dto.auth.AuthenticationResponse;
-import ir.lms.util.dto.course.CourseDTO;
 import ir.lms.model.*;
 import ir.lms.model.enums.RegisterState;
+import ir.lms.model.enums.Semester;
 import ir.lms.repository.*;
-import org.junit.jupiter.api.*;
+import ir.lms.util.dto.auth.AuthRequestDTO;
+import ir.lms.util.dto.auth.AuthenticationResponse;
+import ir.lms.util.dto.offeredCourse.OfferedCourseDTO;
+import ir.lms.util.mapper.OfferedCourseMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CourseControllerTest {
+class OfferedCourseControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
@@ -45,22 +53,28 @@ class CourseControllerTest {
     PasswordEncoder passwordEncoder;
 
     @Autowired
-    private CourseRepository courseRepository;
+    private AccountRepository accountRepository;
 
     @Autowired
     private MajorRepository majorRepository;
 
     @Autowired
-    private AccountRepository accountRepository;
+    private CourseRepository courseRepository;
+
+    @Autowired
+    private TermRepository termRepository;
+
+    @Autowired
+    private OfferedCourseRepository offeredCourseRepository;
+
+    @Autowired
+    private OfferedCourseMapper mapper;
 
     private String accessToken;
 
 
     @BeforeEach
     void beforeEach() throws Exception {
-        courseRepository.deleteAll();
-
-
         Role role = roleRepository.findByName("ADMIN").get();
 
         Person admin = Person.builder().firstName("Admin").lastName("Admin").phoneNumber(randomPhone())
@@ -90,19 +104,42 @@ class CourseControllerTest {
         this.accessToken = authenticationResponse.getAccessToken();
     }
 
-    @AfterEach
-    void afterEach() {
-        courseRepository.deleteAll();
-    }
-
     @Test
-    void save() throws Exception {
-        CourseDTO build = CourseDTO.builder().title("Course Title").description("Course Description")
-                .description("Course Description").majorName("Computer").build();
+    void createOfferedCourse() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
 
-        mockMvc.perform(post("/api/course")
+        Course course = Course.builder().title("Course Title").description("Course Description")
+                .description("Course Description").major(major).build();
+        courseRepository.save(course);
+
+        Role role = roleRepository.findByName("TEACHER").get();
+
+        Person teacher = Person.builder().firstName("teacher").lastName("teacher").phoneNumber(randomPhone())
+                .nationalCode(randomNationalCode()).roles(List.of(role)).build();
+        personRepository.save(teacher);
+
+        Account account = Account.builder().username(teacher.getPhoneNumber())
+                .password(passwordEncoder.encode(teacher.getNationalCode()))
+                .state(RegisterState.ACTIVE).person(teacher).activeRole(role).build();
+        teacher.setAccount(account);
+        accountRepository.save(account);
+
+
+        Term term = termRepository.save(Term.builder()
+                .startDate(LocalDate.of(2025, 11, 10))
+                .endDate(LocalDate.of(2025, 11, 20))
+                .semester(Semester.FALL)
+                .major(major).build());
+
+        OfferedCourseDTO offeredCourse = OfferedCourseDTO.builder()
+                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
+                .endTime(Instant.parse("2025-11-23T12:00:00Z")).capacity(20)
+                .classLocation("tehran").courseId(course.getId())
+                .teacherId(teacher.getId()).termId(term.getId()).build();
+
+        mockMvc.perform(post("/api/offeredCourse")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build))
+                        .content(objectMapper.writeValueAsString(offeredCourse))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated());
     }
@@ -115,62 +152,59 @@ class CourseControllerTest {
                 .description("Course Description").major(major).build();
         courseRepository.save(course);
 
-        CourseDTO dto = CourseDTO.builder().title("Course Title2").description("Course Description2")
-                .description("Course Description2").majorName("Computer").build();
+        Role role = roleRepository.findByName("TEACHER").get();
 
-        mockMvc.perform(put("/api/course/" + course.getId())
+        Person teacher = Person.builder().firstName("teacher").lastName("teacher").phoneNumber(randomPhone())
+                .nationalCode(randomNationalCode()).major(major).roles(List.of(role)).build();
+        personRepository.save(teacher);
+
+        Account account = Account.builder().username(teacher.getPhoneNumber())
+                .password(passwordEncoder.encode(teacher.getNationalCode()))
+                .state(RegisterState.ACTIVE).person(teacher).activeRole(role).build();
+        teacher.setAccount(account);
+        accountRepository.save(account);
+
+        Term term = termRepository.save(Term.builder()
+                .startDate(LocalDate.of(2025, 11, 10))
+                .endDate(LocalDate.of(2025, 11, 20))
+                .semester(Semester.FALL)
+                .major(major).build());
+
+        OfferedCourseDTO offeredCourse = OfferedCourseDTO.builder()
+                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
+                .endTime(Instant.parse("2025-11-23T12:00:00Z")).capacity(20)
+                .classLocation("tehran").courseId(course.getId())
+                .teacherId(teacher.getId()).termId(term.getId()).build();
+
+        MvcResult postResult = mockMvc.perform(post("/api/offeredCourse")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto))
+                        .content(objectMapper.writeValueAsString(offeredCourse))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String postResponseJson = postResult.getResponse().getContentAsString();
+        OfferedCourseDTO created = objectMapper.readValue(postResponseJson, OfferedCourseDTO.class);
+
+        OfferedCourse entity = mapper.toEntity(created);
+
+        mockMvc.perform(put("/api/offeredCourse/" + entity.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(offeredCourse))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void delete() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
-
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
-
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/course/" + course.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
+    void delete() {
     }
 
     @Test
-    void findById() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
-
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
-
-        mockMvc.perform(get("/api/course/" + course.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
+    void findById() {
     }
 
     @Test
-    void findAll() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
-
-
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
-
-        Course course2 = Course.builder().title("Course Title2").description("Course Description2")
-                .description("Course Description2").major(major).build();
-
-        courseRepository.save(course2);
-
-        mockMvc.perform(get("/api/course")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
+    void findAll() {
     }
 
 

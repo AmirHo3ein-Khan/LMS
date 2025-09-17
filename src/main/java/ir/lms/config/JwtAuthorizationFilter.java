@@ -7,16 +7,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
+import java.util.UUID;
 
 @Component
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
@@ -46,15 +43,14 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
         String token = header.substring(7);
 
-        String foundedAccount = jwtService.extractUsername(token);
+        String extractUUID = jwtService.extractUUID(token);
 
-        Account account = accountRepository.findByUsername(foundedAccount)
+        Account account = accountRepository.findByAuthId(UUID.fromString(extractUUID))
                 .orElseThrow(() -> new UsernameNotFoundException("not found token"));
         try {
-            String username = jwtService.extractUsername(token);
-            var userDetails = customUserDetailsService.loadUserByUsername(username);
+            var userDetails = customUserDetailsService.loadUserByUsername(account.getUsername());
 
-            if (jwtService.isTokenValid(token, username) && account.getAuthId() != null) {
+            if (jwtService.isTokenValid(token, extractUUID) && account.getAuthId() != null) {
 
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());

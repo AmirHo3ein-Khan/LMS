@@ -1,8 +1,7 @@
 package ir.lms.service.impl;
 
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthResponseDTO;
-import ir.lms.dto.auth.ChangeRoleRequestDTO;
+import ir.lms.util.dto.auth.AuthRequestDTO;
+import ir.lms.util.dto.auth.AuthResponseDTO;
 import ir.lms.exception.AccessDeniedException;
 import ir.lms.exception.DuplicateException;
 import ir.lms.exception.EntityNotFoundException;
@@ -71,9 +70,9 @@ public class AuthServiceImpl extends BaseServiceImpl<Person, Long> implements Au
             account.setAuthId(UUID.randomUUID());
             accountRepository.save(account);
 
-            final String token = jwtService.generateAccessToken(account.getUsername(), account.getActiveRole().getName());
+            final String token = jwtService.generateAccessToken(account.getAuthId());
 
-            final String refreshToken = jwtService.generateRefreshToken(account.getUsername());
+            final String refreshToken = jwtService.generateRefreshToken(account.getAuthId());
 
             return AuthResponseDTO.builder().accessToken(token)
                     .refreshToken(refreshToken).tokenType("Barrier ")

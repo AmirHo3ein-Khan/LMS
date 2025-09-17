@@ -2,8 +2,8 @@ package ir.lms.controller;
 
 import ir.lms.model.Role;
 import ir.lms.service.AuthService;
-import ir.lms.dto.ApiResponseDTO;
-import ir.lms.dto.auth.ChangeRoleRequestDTO;
+import ir.lms.util.dto.ApiResponseDTO;
+import ir.lms.util.dto.auth.ChangeRoleRequestDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;

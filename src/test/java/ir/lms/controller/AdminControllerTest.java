@@ -1,13 +1,11 @@
 package ir.lms.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.auth.AddRoleRequest;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
-import ir.lms.dto.auth.PersonDTO;
+import ir.lms.util.dto.auth.AddRoleRequest;
+import ir.lms.util.dto.auth.AuthRequestDTO;
+import ir.lms.util.dto.auth.AuthenticationResponse;
+import ir.lms.util.dto.auth.PersonDTO;
 import ir.lms.model.Account;
-import ir.lms.model.Major;
 import ir.lms.model.Person;
 import ir.lms.model.Role;
 import ir.lms.model.enums.RegisterState;
@@ -15,7 +13,6 @@ import ir.lms.repository.AccountRepository;
 import ir.lms.repository.MajorRepository;
 import ir.lms.repository.PersonRepository;
 import ir.lms.repository.RoleRepository;
-import ir.lms.service.AuthService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

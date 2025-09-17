@@ -10,6 +10,7 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +22,6 @@ import java.util.List;
 @NoArgsConstructor
 @SuperBuilder
 public class OfferedCourse extends BaseEntity<Long> {
-
-    private LocalDateTime classDate;
 
     private Instant startTime;
 

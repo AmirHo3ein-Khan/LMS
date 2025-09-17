@@ -1,49 +1,96 @@
 package ir.lms.service.impl;
 
+import ir.lms.model.Major;
 import ir.lms.model.OfferedCourse;
+import ir.lms.model.Person;
+import ir.lms.model.Term;
+import ir.lms.model.enums.CourseStatus;
+import ir.lms.repository.MajorRepository;
 import ir.lms.repository.OfferedCourseRepository;
+import ir.lms.repository.PersonRepository;
+import ir.lms.repository.TermRepository;
 import ir.lms.service.OfferedCourseService;
 import ir.lms.service.base.BaseService;
 import ir.lms.service.base.BaseServiceImpl;
+import ir.lms.util.dto.offeredCourse.OfferedCourseDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+
 @Service
 public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Long> implements OfferedCourseService {
-    private final OfferedCourseRepository offeredCourseRepository;
+    private final static String NOT_BE_NULL = "Offered course start and end times must not be null";
+    private final static String FUTURE_ILLEGAL = "Offered course %s time must be in the future";
+    private final static String TIME_ILLEGAL = "Offered course start time must be before end time";
+    private final static String ILLEGAL_AFTER_START = "Can't %s Offered course after term start date!";
+    private final static String NOT_FOUND = "%s not found!";
 
-    protected OfferedCourseServiceImpl(JpaRepository<OfferedCourse, Long> repository, OfferedCourseRepository offeredCourseRepository) {
+    private final OfferedCourseRepository offeredCourseRepository;
+    private final PersonRepository personRepository;
+    private final MajorRepository majorRepository;
+    private final TermRepository termRepository;
+
+    protected OfferedCourseServiceImpl(JpaRepository<OfferedCourse, Long> repository, OfferedCourseRepository offeredCourseRepository, PersonRepository personRepository, MajorRepository majorRepository, TermRepository termRepository) {
         super(repository);
         this.offeredCourseRepository = offeredCourseRepository;
+        this.personRepository = personRepository;
+        this.majorRepository = majorRepository;
+        this.termRepository = termRepository;
     }
 
     @Override
     protected void prePersist(OfferedCourse offeredCourse) {
-        super.prePersist(offeredCourse);
-    }
+        LocalDateTime now = LocalDateTime.now();
+        Instant instant = now.toInstant(ZoneOffset.UTC);
+        if (offeredCourse.getStartTime() == null || offeredCourse.getEndTime() == null) {
+            throw new IllegalArgumentException(NOT_BE_NULL);
+        }
 
-    @Override
-    protected void postPersist(OfferedCourse offeredCourse) {
-        super.postPersist(offeredCourse);
+        if (!offeredCourse.getStartTime().isAfter(instant)) {
+            throw new IllegalArgumentException(String.format(FUTURE_ILLEGAL, "start"));
+        }
+
+        if (!offeredCourse.getEndTime().isAfter(instant)) {
+            throw new IllegalArgumentException(String.format(FUTURE_ILLEGAL, "end"));
+        }
+
+        if (!offeredCourse.getStartTime().isBefore(offeredCourse.getEndTime())) {
+            throw new IllegalArgumentException(TIME_ILLEGAL);
+        }
+        offeredCourse.setCourseStatus(CourseStatus.UNFILLED);
     }
 
     @Override
     protected void preUpdate(OfferedCourse offeredCourse) {
-        super.preUpdate(offeredCourse);
+        LocalDate termStartDate = offeredCourse.getTerm().getStartDate();
+        if (!termStartDate.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException(ILLEGAL_AFTER_START);
+        }
     }
 
     @Override
-    protected void postUpdate(OfferedCourse offeredCourse) {
-        super.postUpdate(offeredCourse);
+    public void assignCourseToStudent(Long course, Long studentId) {
+        OfferedCourse offeredCourse = offeredCourseRepository.findById(course)
+                .orElseThrow(() -> new IllegalArgumentException(String.format(NOT_FOUND, "Course")));
+        Person person = personRepository.findById(studentId)
+                .orElseThrow(() -> new IllegalArgumentException(String.format(NOT_FOUND, "Student")));
+        offeredCourse.getStudent().add(person);
+        person.getOfferedCourses().add(offeredCourse);
+        offeredCourseRepository.save(offeredCourse);
+        personRepository.save(person);
     }
 
-    @Override
-    protected void preDelete(Long aLong) {
-        super.preDelete(aLong);
-    }
-
-    @Override
-    protected void postDelete(Long aLong) {
-        super.postDelete(aLong);
-    }
+//    @Override
+//    public List<OfferedCourseDTO> getAllCoursesInATerm(Long termId, Long majorId) {
+//        Term term = termRepository.findById(termId)
+//                .orElseThrow(() -> new IllegalArgumentException(String.format(NOT_FOUND, "Term")));
+//
+//        Long id = term.getMajor().getId();
+//
+//    }
 }

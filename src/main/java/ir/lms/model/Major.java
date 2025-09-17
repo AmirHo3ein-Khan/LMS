@@ -25,6 +25,7 @@ public class Major extends BaseEntity<Long> {
 
     @NotBlank(message = "Major cannot be empty")
     @NotNull(message = "Major cannot be null")
+    @Column(unique = true)
     private String majorName;
 
     private UUID majorCode;
@@ -36,4 +37,7 @@ public class Major extends BaseEntity<Long> {
 
     @OneToMany(mappedBy = "major")
     private List<Course> courses = new ArrayList<>();
+
+    @OneToMany(mappedBy = "major")
+    private List<Term> terms = new ArrayList<>();
 }

@@ -2,10 +2,7 @@ package ir.lms.model;
 
 import ir.lms.model.base.BaseEntity;
 import ir.lms.model.enums.Semester;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -34,6 +31,9 @@ public class Term extends BaseEntity<Long> {
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Semester cannot be null.")
     private Semester semester;
+
+    @ManyToOne
+    private Major major;
 
     @OneToMany(mappedBy = "term")
     private List<OfferedCourse> offeredCourses = new ArrayList<>();

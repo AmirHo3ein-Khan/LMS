@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -30,32 +30,32 @@ public class JwtService {
         this.publicKey = KeyUtils.loadPublicKey("keys/local_only/public_key.pem");
     }
 
-    public String generateAccessToken(final String username , String activeRole) {
-        final Map<String, Object> claims = Map.of(TOKEN_TYPE, "ACCESS_TOKEN" ,  "activeRole", activeRole);
-        return buildToken(username, claims, this.accessTokenExpiration);
+    public String generateAccessToken(final UUID uuid) {
+        final Map<String, Object> claims = Map.of(TOKEN_TYPE, "ACCESS_TOKEN");
+        return buildToken(uuid, claims, this.accessTokenExpiration);
     }
 
-    public String generateRefreshToken(final String username) {
+    public String generateRefreshToken(final UUID uuid) {
         final Map<String, Object> claims = Map.of(TOKEN_TYPE, "REFRESH_TOKEN");
-        return buildToken(username, claims, this.refreshTokenExpiration);
+        return buildToken(uuid, claims, this.refreshTokenExpiration);
     }
 
-    public String buildToken(final String username, final Map<String, Object> claims, final long expiration) {
+    public String buildToken(final UUID uuid, final Map<String, Object> claims, final long expiration) {
         return Jwts.builder()
                 .claims(claims)
-                .subject(username)
+                .subject(uuid.toString())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(this.privateKey)
                 .compact();
     }
 
-    public boolean isTokenValid(final String token, final String expectedUsername) {
-        final String username = extractUsername(token);
-        return username.equals(expectedUsername) && !isTokenExpired(token);
+    public boolean isTokenValid(final String token, final String expectedUUID) {
+        final String uuid = extractUUID(token);
+        return uuid.equals(expectedUUID) && !isTokenExpired(token);
     }
 
-    public String extractUsername(final String token) {
+    public String extractUUID(final String token) {
         return extractClaims(token).getSubject();
     }
 

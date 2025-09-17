@@ -1,12 +1,12 @@
 package ir.lms.controller;
 
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthResponseDTO;
-import ir.lms.dto.auth.PersonDTO;
+import ir.lms.util.dto.auth.AuthRequestDTO;
+import ir.lms.util.dto.auth.AuthResponseDTO;
+import ir.lms.util.dto.auth.PersonDTO;
 import ir.lms.model.Person;
-import ir.lms.dto.ApiResponseDTO;
+import ir.lms.util.dto.ApiResponseDTO;
 import ir.lms.service.AuthService;
-import ir.lms.dto.mapper.PersonMapper;
+import ir.lms.util.mapper.PersonMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
