@@ -1,25 +1,20 @@
 package ir.lms.service.impl;
 
-import ir.lms.model.Major;
-import ir.lms.model.OfferedCourse;
-import ir.lms.model.Person;
-import ir.lms.model.Term;
+import ir.lms.exception.EntityNotFoundException;
+import ir.lms.model.*;
 import ir.lms.model.enums.CourseStatus;
-import ir.lms.repository.MajorRepository;
-import ir.lms.repository.OfferedCourseRepository;
-import ir.lms.repository.PersonRepository;
-import ir.lms.repository.TermRepository;
+import ir.lms.repository.*;
 import ir.lms.service.OfferedCourseService;
-import ir.lms.service.base.BaseService;
 import ir.lms.service.base.BaseServiceImpl;
-import ir.lms.util.dto.offeredCourse.OfferedCourseDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
+import java.security.Principal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -32,16 +27,15 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
 
     private final OfferedCourseRepository offeredCourseRepository;
     private final PersonRepository personRepository;
-    private final MajorRepository majorRepository;
-    private final TermRepository termRepository;
 
-    protected OfferedCourseServiceImpl(JpaRepository<OfferedCourse, Long> repository, OfferedCourseRepository offeredCourseRepository, PersonRepository personRepository, MajorRepository majorRepository, TermRepository termRepository) {
+    public OfferedCourseServiceImpl(JpaRepository<OfferedCourse, Long> repository ,
+                                    OfferedCourseRepository offeredCourseRepository,
+                                    PersonRepository personRepository) {
         super(repository);
-        this.offeredCourseRepository = offeredCourseRepository;
         this.personRepository = personRepository;
-        this.majorRepository = majorRepository;
-        this.termRepository = termRepository;
+        this.offeredCourseRepository = offeredCourseRepository;
     }
+
 
     @Override
     protected void prePersist(OfferedCourse offeredCourse) {
@@ -84,13 +78,4 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
         offeredCourseRepository.save(offeredCourse);
         personRepository.save(person);
     }
-
-//    @Override
-//    public List<OfferedCourseDTO> getAllCoursesInATerm(Long termId, Long majorId) {
-//        Term term = termRepository.findById(termId)
-//                .orElseThrow(() -> new IllegalArgumentException(String.format(NOT_FOUND, "Term")));
-//
-//        Long id = term.getMajor().getId();
-//
-//    }
 }

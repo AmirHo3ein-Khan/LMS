@@ -1,6 +1,7 @@
 package ir.lms.util.mapper;
 
 import ir.lms.exception.EntityNotFoundException;
+import ir.lms.exception.IllegalRequestException;
 import ir.lms.model.*;
 import ir.lms.repository.CourseRepository;
 import ir.lms.repository.MajorRepository;
@@ -42,6 +43,11 @@ public abstract class OfferedCourseMapper implements BaseMapper<OfferedCourse , 
         if (dto.getTeacherId() != null) {
             Person person = personRepository.findById(dto.getTeacherId())
                     .orElseThrow(() -> new EntityNotFoundException("not found"));
+            Term term = termRepository.findById(dto.getTermId())
+                    .orElseThrow(() -> new EntityNotFoundException("not found"));
+            if (!(person.getMajor() == term.getMajor())){
+                throw new IllegalRequestException("This course not in teacher major to take!");
+            }
             entity.setTeacher(person);
         }
     }

@@ -63,4 +63,18 @@ public class GlobalExceptionHandler {
         e.printStackTrace();
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(exceptionResponse);
     }
+
+
+    @ExceptionHandler(IllegalRequestException.class)
+    public ResponseEntity<ExceptionResponse> handleIllegalRequestException(IllegalRequestException e, HttpServletRequest request) {
+        ExceptionResponse exceptionResponse = new ExceptionResponse(
+                Instant.now().toString(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI()
+        );
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(exceptionResponse);
+    }
 }

@@ -62,7 +62,7 @@ public class InitializerServiceImpl implements InitializerService {
                     .password(passwordEncoder.encode("adminadmin"))
                     .state(RegisterState.ACTIVE)
                     .person(admin)
-                    .activeRole(userRole)
+                    .activeRole(adminRole)
                     .build();
 
             admin.setAccount(account);

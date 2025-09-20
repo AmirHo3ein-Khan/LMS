@@ -1,8 +1,8 @@
 package ir.lms.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ir.lms.model.*;
+import ir.lms.model.enums.CourseStatus;
 import ir.lms.model.enums.RegisterState;
 import ir.lms.model.enums.Semester;
 import ir.lms.repository.*;
@@ -16,19 +16,17 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -170,41 +168,113 @@ class OfferedCourseControllerTest {
                 .semester(Semester.FALL)
                 .major(major).build());
 
-        OfferedCourseDTO offeredCourse = OfferedCourseDTO.builder()
+        OfferedCourse offeredCourse = OfferedCourse.builder()
                 .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z")).capacity(20)
+                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
+                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
+                .capacity(20).classLocation("Mashhad").build();
+
+        offeredCourseRepository.save(offeredCourse);
+
+        OfferedCourseDTO offeredCourseDTO = OfferedCourseDTO.builder()
+                .startTime(Instant.parse("2026-11-23T11:00:00Z"))
+                .endTime(Instant.parse("2026-11-23T12:00:00Z")).capacity(20)
                 .classLocation("tehran").courseId(course.getId())
                 .teacherId(teacher.getId()).termId(term.getId()).build();
 
-        MvcResult postResult = mockMvc.perform(post("/api/offeredCourse")
+        mockMvc.perform(put("/api/offeredCourse/" + offeredCourse.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(offeredCourse))
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        String postResponseJson = postResult.getResponse().getContentAsString();
-        OfferedCourseDTO created = objectMapper.readValue(postResponseJson, OfferedCourseDTO.class);
-
-        OfferedCourse entity = mapper.toEntity(created);
-
-        mockMvc.perform(put("/api/offeredCourse/" + entity.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(offeredCourse))
+                        .content(objectMapper.writeValueAsString(offeredCourseDTO))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void delete() {
+    void delete() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+
+        Course course = Course.builder().title("Course Title").description("Course Description")
+                .description("Course Description").major(major).build();
+        courseRepository.save(course);
+
+        Role role = roleRepository.findByName("TEACHER").get();
+
+        Person teacher = Person.builder().firstName("teacher").lastName("teacher").phoneNumber(randomPhone())
+                .nationalCode(randomNationalCode()).major(major).roles(List.of(role)).build();
+        personRepository.save(teacher);
+
+        Account account = Account.builder().username(teacher.getPhoneNumber())
+                .password(passwordEncoder.encode(teacher.getNationalCode()))
+                .state(RegisterState.ACTIVE).person(teacher).activeRole(role).build();
+        teacher.setAccount(account);
+        accountRepository.save(account);
+
+        Term term = termRepository.save(Term.builder()
+                .startDate(LocalDate.of(2025, 11, 10))
+                .endDate(LocalDate.of(2025, 11, 20))
+                .semester(Semester.FALL)
+                .major(major).build());
+
+        OfferedCourse offeredCourse = OfferedCourse.builder()
+                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
+                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
+                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
+                .capacity(20).classLocation("Mashhad").build();
+
+        offeredCourseRepository.save(offeredCourse);
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/offeredCourse/" + offeredCourse.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void findById() {
+    void findById() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+
+        Course course = Course.builder().title("Course Title").description("Course Description")
+                .description("Course Description").major(major).build();
+        courseRepository.save(course);
+
+        Role role = roleRepository.findByName("TEACHER").get();
+
+        Person teacher = Person.builder().firstName("teacher").lastName("teacher").phoneNumber(randomPhone())
+                .nationalCode(randomNationalCode()).major(major).roles(List.of(role)).build();
+        personRepository.save(teacher);
+
+        Account account = Account.builder().username(teacher.getPhoneNumber())
+                .password(passwordEncoder.encode(teacher.getNationalCode()))
+                .state(RegisterState.ACTIVE).person(teacher).activeRole(role).build();
+        teacher.setAccount(account);
+        accountRepository.save(account);
+
+        Term term = termRepository.save(Term.builder()
+                .startDate(LocalDate.of(2025, 11, 10))
+                .endDate(LocalDate.of(2025, 11, 20))
+                .semester(Semester.FALL)
+                .major(major).build());
+
+        OfferedCourse offeredCourse = OfferedCourse.builder()
+                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
+                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
+                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
+                .capacity(20).classLocation("Mashhad").build();
+
+        offeredCourseRepository.save(offeredCourse);
+
+        mockMvc.perform(get("/api/offeredCourse/" + offeredCourse.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void findAll() {
+    void findAll() throws Exception {
+        mockMvc.perform(get("/api/offeredCourse")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
     }
 
 
