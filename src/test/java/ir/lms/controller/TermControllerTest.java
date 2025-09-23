@@ -5,9 +5,9 @@ import ir.lms.model.*;
 import ir.lms.model.enums.RegisterState;
 import ir.lms.model.enums.Semester;
 import ir.lms.repository.*;
-import ir.lms.util.dto.auth.AuthRequestDTO;
-import ir.lms.util.dto.auth.AuthenticationResponse;
-import ir.lms.util.dto.term.TermDTO;
+import ir.lms.dto.auth.AuthRequestDTO;
+import ir.lms.dto.auth.AuthenticationResponse;
+import ir.lms.dto.term.TermDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -21,11 +21,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;

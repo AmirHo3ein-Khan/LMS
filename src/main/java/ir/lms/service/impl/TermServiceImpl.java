@@ -11,14 +11,19 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements TermService {
+
     private final static String NOT_BE_NULL = "Term start and end times must not be null";
     private final static String FUTURE_ILLEGAL = "Term %s time must be in the future";
     private final static String TIME_ILLEGAL = "Term start time must be before end time";
     private final static String ILLEGAL_AFTER_START = "Can't %s term after start date!";
     private final static String NOT_FOUND = "%s not found!";
+
+
     private final TermRepository termRepository;
 
     protected TermServiceImpl(JpaRepository<Term, Long> repository, TermRepository termRepository) {
@@ -45,6 +50,7 @@ public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements Term
             throw new IllegalArgumentException(TIME_ILLEGAL);
         }
         term.setSemester(SemesterUtil.currentSemester());
+        term.setDeleted(false);
     }
 
     @Override
@@ -56,12 +62,35 @@ public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements Term
     }
 
     @Override
-    protected void preDelete(Long aLong) {
+    public void delete(Long aLong) {
         Term term = termRepository.findById(aLong)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "term")));
         LocalDate now = LocalDate.now();
         if (!term.getStartDate().isAfter(now)) {
             throw new AccessDeniedException(String.format(ILLEGAL_AFTER_START, "delete"));
         }
+        term.setDeleted(true);
+    }
+
+    @Override
+    public Term findById(Long aLong) {
+        Term term = termRepository.findById(aLong)
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "term")));
+        if (term.isDeleted()) {
+            throw new EntityNotFoundException(String.format(NOT_FOUND, "term"));
+        }
+        return term;
+    }
+
+    @Override
+    public List<Term> findAll() {
+        List<Term> terms = termRepository.findAll();
+        List<Term> result = new ArrayList<>();
+        for (Term term : terms) {
+            if (!term.isDeleted()) {
+                result.add(term);
+            }
+        }
+        return result;
     }
 }

@@ -1,7 +1,7 @@
 package ir.lms.service.impl;
 
-import ir.lms.util.dto.auth.AuthRequestDTO;
-import ir.lms.util.dto.auth.AuthResponseDTO;
+import ir.lms.dto.auth.AuthRequestDTO;
+import ir.lms.dto.auth.AuthResponseDTO;
 import ir.lms.exception.AccessDeniedException;
 import ir.lms.exception.DuplicateException;
 import ir.lms.exception.EntityNotFoundException;

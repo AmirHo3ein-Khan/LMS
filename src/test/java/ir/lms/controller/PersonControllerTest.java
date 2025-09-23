@@ -1,9 +1,9 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.auth.AuthRequestDTO;
-import ir.lms.util.dto.auth.AuthenticationResponse;
-import ir.lms.util.dto.auth.ChangeRoleRequestDTO;
+import ir.lms.dto.auth.AuthRequestDTO;
+import ir.lms.dto.auth.AuthenticationResponse;
+import ir.lms.dto.auth.ChangeRoleRequestDTO;
 import ir.lms.model.Account;
 import ir.lms.model.Person;
 import ir.lms.model.Role;

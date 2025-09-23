@@ -19,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@DiscriminatorValue("MULTIPLE_CHOICE")
+@DiscriminatorValue("TEST")
 public class TestQuestion extends Question {
 
     @OneToMany(mappedBy = "question" , cascade = CascadeType.ALL)

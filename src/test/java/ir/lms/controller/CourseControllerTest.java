@@ -1,9 +1,9 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.auth.AuthRequestDTO;
-import ir.lms.util.dto.auth.AuthenticationResponse;
-import ir.lms.util.dto.course.CourseDTO;
+import ir.lms.dto.auth.AuthRequestDTO;
+import ir.lms.dto.auth.AuthenticationResponse;
+import ir.lms.dto.course.CourseDTO;
 import ir.lms.model.*;
 import ir.lms.model.enums.RegisterState;
 import ir.lms.repository.*;
@@ -109,7 +109,7 @@ class CourseControllerTest {
 
     @Test
     void update() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
+        Major major = majorRepository.save(Major.builder().majorName("Accounting").build());
 
         Course course = Course.builder().title("Course Title").description("Course Description")
                 .description("Course Description").major(major).build();
@@ -127,7 +127,7 @@ class CourseControllerTest {
 
     @Test
     void delete() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
+        Major major = majorRepository.save(Major.builder().majorName("English").build());
 
         Course course = Course.builder().title("Course Title").description("Course Description")
                 .description("Course Description").major(major).build();
@@ -158,17 +158,41 @@ class CourseControllerTest {
         Major major = majorRepository.findByMajorName("Computer").get();
 
 
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
+        Course course = Course.builder().title("Course Title")
+                .description("Course Description")
+                .major(major).build();
         courseRepository.save(course);
 
-        Course course2 = Course.builder().title("Course Title2").description("Course Description2")
-                .description("Course Description2").major(major).build();
+        Course course2 = Course.builder().title("Course Title2")
+                .description("Course Description2")
+                .major(major).build();
 
         courseRepository.save(course2);
 
         mockMvc.perform(get("/api/course")
                         .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void findAllMajorCourses() throws Exception {
+        Major major = majorRepository.save(Major.builder().deleted(false).majorName("IT").build());
+
+        Course course1 = Course.builder().title("Course Title1")
+                .description("Course Description1")
+                .major(major).build();
+
+        Course course2 = Course.builder().title("Course Title")
+                .description("Course Description1")
+                .major(major).build();
+
+        courseRepository.save(course1);
+        courseRepository.save(course2);
+
+        mockMvc.perform(get("/api/course/major/courses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(major.getMajorName())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }

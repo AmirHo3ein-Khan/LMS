@@ -30,7 +30,7 @@ public class Major extends BaseEntity<Long> {
 
     private UUID majorCode;
 
-    private Boolean active;
+    private boolean deleted;
 
     @OneToMany(mappedBy = "major")
     private List<Person> person = new ArrayList<>();

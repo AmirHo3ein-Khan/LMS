@@ -9,6 +9,8 @@ import ir.lms.exception.EntityNotFoundException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -30,15 +32,37 @@ public class MajorServiceImpl extends BaseServiceImpl<Major , Long> implements M
             throw new DuplicateException(EXIST_MAJOR);
         }
         major.setMajorCode(UUID.randomUUID());
-        major.setActive(true);
+        major.setDeleted(false);
     }
 
     @Override
     public void delete(Long aLong) {
         Major major = majorRepository.findById(aLong)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Major")));
-        major.setActive(false);
+        major.setDeleted(true);
         majorRepository.save(major);
+    }
+
+    @Override
+    public List<Major> findAll() {
+        List<Major> majors = majorRepository.findAll();
+        List<Major> result = new ArrayList<>();
+        for (Major major : majors) {
+            if (major.isDeleted()) {
+                result.add(major);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public Major findById(Long aLong) {
+        Major major = majorRepository.findById(aLong)
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Major")));
+        if (major.isDeleted()) {
+            throw new EntityNotFoundException(String.format(NOT_FOUND, "Major"));
+        }
+        return major;
     }
 }
 

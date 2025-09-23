@@ -12,6 +12,6 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @NoArgsConstructor
 @SuperBuilder
-@DiscriminatorValue("DESCRIPTIVE_QUESTION")
+@DiscriminatorValue("DESCRIPTIVE")
 public class DescriptiveQuestion extends Question {
 }

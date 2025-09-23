@@ -1,9 +1,9 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.auth.AuthRequestDTO;
-import ir.lms.util.dto.auth.AuthenticationResponse;
-import ir.lms.util.dto.major.MajorDTO;
+import ir.lms.dto.auth.AuthRequestDTO;
+import ir.lms.dto.auth.AuthenticationResponse;
+import ir.lms.dto.major.MajorDTO;
 import ir.lms.model.Account;
 import ir.lms.model.Major;
 import ir.lms.model.Person;
@@ -134,7 +134,7 @@ class MajorControllerTest {
 
     @Test
     void findById() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
+        Major major = majorRepository.save(Major.builder().majorName("Electronics2").deleted(false).build());
 
         mockMvc.perform(get("/api/major/"+major.getId())
                         .contentType(MediaType.APPLICATION_JSON)

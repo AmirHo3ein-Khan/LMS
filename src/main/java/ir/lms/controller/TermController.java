@@ -2,14 +2,13 @@ package ir.lms.controller;
 
 import ir.lms.model.Term;
 import ir.lms.service.TermService;
-import ir.lms.util.dto.ApiResponseDTO;
-import ir.lms.util.mapper.TermMapper;
-import ir.lms.util.dto.term.TermDTO;
+import ir.lms.dto.ApiResponseDTO;
+import ir.lms.mapper.TermMapper;
+import ir.lms.dto.term.TermDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.List;
 

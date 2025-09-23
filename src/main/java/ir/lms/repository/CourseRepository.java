@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.util.Optional;
+
 @Repository
 public interface CourseRepository extends JpaRepository<Course,Long> {
 
@@ -17,4 +19,6 @@ public interface CourseRepository extends JpaRepository<Course,Long> {
             "FROM Course c " +
             "WHERE c.title = :title AND c.major.id = :majorId")
     boolean existsByMajorAndTitle(@Param("majorId") Long majorId, @Param("title") String title);
+
+    Optional<Course> findByMajor(Major major);
 }

@@ -1,15 +1,14 @@
 package ir.lms.controller;
 
-import ir.lms.util.dto.ApiResponseDTO;
-import ir.lms.util.dto.major.MajorDTO;
-import ir.lms.util.mapper.MajorMapper;
+import ir.lms.dto.ApiResponseDTO;
+import ir.lms.dto.major.MajorDTO;
+import ir.lms.mapper.MajorMapper;
 import ir.lms.model.Major;
 import ir.lms.service.MajorService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,9 +57,7 @@ public class MajorController {
     @GetMapping
     public ResponseEntity<List<MajorDTO>> findAll() {
         List<MajorDTO> majors = new ArrayList<>();
-        for (Major m :  majorService.findAll()) {
-            majors.add(majorMapper.toDto(m));
-        }
+        for (Major m :  majorService.findAll())majors.add(majorMapper.toDto(m));
         return ResponseEntity.status(HttpStatus.OK).body(majors);
     }
 }

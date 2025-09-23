@@ -1,11 +1,10 @@
 package ir.lms.controller;
 
-import ir.lms.util.dto.auth.PersonDTO;
-import ir.lms.util.mapper.PersonMapper;
-import ir.lms.model.Person;
+import ir.lms.dto.auth.RegisterDTO;
 import ir.lms.service.AuthService;
-import ir.lms.util.dto.ApiResponseDTO;
-import ir.lms.util.dto.auth.AddRoleRequest;
+import ir.lms.dto.ApiResponseDTO;
+import ir.lms.dto.auth.AddRoleRequest;
+import ir.lms.mapper.RegisterMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,27 +16,25 @@ public class AdminController {
 
 
     private final AuthService authService;
-    private final PersonMapper personMapper;
+    private final RegisterMapper registerMapper;
 
-    public AdminController(AuthService authService, PersonMapper personMapper) {
+    public AdminController(AuthService authService, RegisterMapper registerMapper) {
         this.authService = authService;
-        this.personMapper = personMapper;
+        this.registerMapper = registerMapper;
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     @PostMapping("/teacher/register")
-    public ResponseEntity<ApiResponseDTO> teacherRegister(@RequestBody PersonDTO request) {
-        Person person = authService.persist(personMapper.toEntity(request));
-        authService.addRoleToPerson("teacher" , person.getId());
+    public ResponseEntity<ApiResponseDTO> teacherRegister(@RequestBody RegisterDTO request) {
+       authService.persist(registerMapper.toEntity(request));
         ApiResponseDTO responseDTO = new ApiResponseDTO("Register success" , true);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/manager/register")
-    public ResponseEntity<ApiResponseDTO> managerRegister(@RequestBody PersonDTO request) {
-        Person person = authService.persist(personMapper.toEntity(request));
-        authService.addRoleToPerson("manager" , person.getId());
+    public ResponseEntity<ApiResponseDTO> managerRegister(@RequestBody RegisterDTO request) {
+        authService.persist(registerMapper.toEntity(request));
         ApiResponseDTO responseDTO = new ApiResponseDTO("Register success" , true);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }

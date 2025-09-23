@@ -32,6 +32,8 @@ public class Term extends BaseEntity<Long> {
     @NotNull(message = "Semester cannot be null.")
     private Semester semester;
 
+    private boolean deleted;
+
     @ManyToOne
     private Major major;
 

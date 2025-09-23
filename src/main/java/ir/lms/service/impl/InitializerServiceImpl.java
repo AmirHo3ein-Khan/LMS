@@ -89,7 +89,7 @@ public class InitializerServiceImpl implements InitializerService {
     @Override
     public void createMajorIfNotExists() {
         Major computer = Major.builder().majorName("Computer")
-                .active(true).majorCode(UUID.randomUUID()).build();
+                .deleted(false).majorCode(UUID.randomUUID()).build();
         if (majorRepository.findByMajorName(computer.getMajorName()).isEmpty()) {
             majorRepository.save(computer);
         }

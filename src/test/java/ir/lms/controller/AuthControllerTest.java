@@ -1,14 +1,13 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.auth.AuthRequestDTO;
-import ir.lms.util.dto.auth.PersonDTO;
+import ir.lms.dto.auth.AuthRequestDTO;
+import ir.lms.dto.auth.PersonDTO;
 import ir.lms.model.Account;
 import ir.lms.model.Person;
 import ir.lms.model.Role;
 import ir.lms.model.enums.RegisterState;
 import ir.lms.repository.AccountRepository;
-import ir.lms.repository.MajorRepository;
 import ir.lms.repository.PersonRepository;
 import ir.lms.repository.RoleRepository;
 import org.junit.jupiter.api.*;
@@ -36,9 +35,6 @@ class AuthControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Autowired
-    private MajorRepository majorRepository;
 
     @Autowired
     private AccountRepository accountRepository;

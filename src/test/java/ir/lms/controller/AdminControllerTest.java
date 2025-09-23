@@ -1,16 +1,15 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.auth.AddRoleRequest;
-import ir.lms.util.dto.auth.AuthRequestDTO;
-import ir.lms.util.dto.auth.AuthenticationResponse;
-import ir.lms.util.dto.auth.PersonDTO;
+import ir.lms.dto.auth.AddRoleRequest;
+import ir.lms.dto.auth.AuthRequestDTO;
+import ir.lms.dto.auth.AuthenticationResponse;
+import ir.lms.dto.auth.RegisterDTO;
 import ir.lms.model.Account;
 import ir.lms.model.Person;
 import ir.lms.model.Role;
 import ir.lms.model.enums.RegisterState;
 import ir.lms.repository.AccountRepository;
-import ir.lms.repository.MajorRepository;
 import ir.lms.repository.PersonRepository;
 import ir.lms.repository.RoleRepository;
 import org.junit.jupiter.api.*;
@@ -40,9 +39,6 @@ class AdminControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Autowired
-    private MajorRepository majorRepository;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -102,12 +98,13 @@ class AdminControllerTest {
 
     @Test
     void teacherRegister() throws Exception {
-        PersonDTO build = PersonDTO.builder()
+        RegisterDTO build = RegisterDTO.builder()
                 .firstName("Amir hossein")
                 .lastName("Khanalipour")
                 .phoneNumber(randomPhone())
                 .nationalCode(randomNationalCode())
                 .majorName("Computer")
+                .role("teacher")
                 .build();
 
         mockMvc.perform(post("/api/admin/teacher/register")
@@ -119,12 +116,13 @@ class AdminControllerTest {
 
     @Test
     void managerRegister() throws Exception {
-        PersonDTO build = PersonDTO.builder()
+        RegisterDTO build = RegisterDTO.builder()
                 .firstName("Amir hossein")
                 .lastName("Khanalipour")
                 .phoneNumber(randomPhone())
                 .nationalCode(randomNationalCode())
                 .majorName("Computer")
+                .role("manager")
                 .build();
 
         mockMvc.perform(post("/api/admin/manager/register")

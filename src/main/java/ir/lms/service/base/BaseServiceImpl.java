@@ -73,6 +73,7 @@ public abstract class BaseServiceImpl<T extends BaseEntity<ID>, ID extends Seria
 
     protected void postDelete(ID id){
     }
+
 }
 
 

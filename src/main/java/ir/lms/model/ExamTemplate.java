@@ -11,8 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,15 +32,17 @@ public class ExamTemplate extends BaseEntity<Long> {
     private String description;
 
     @NotNull(message = "Exam start date cannot be null")
-    private LocalDateTime examStartTime;
+    private Instant examStartTime;
 
     @NotNull(message = "Exam start time cannot be null")
-    private LocalDateTime examEndTime;
+    private Instant examEndTime;
 
     @Enumerated(EnumType.STRING)
     private ExamState examState;
 
     private Double examScore;
+
+    private boolean deleted;
 
     @ManyToOne
     @JoinColumn(name = "course_id")
@@ -51,5 +52,5 @@ public class ExamTemplate extends BaseEntity<Long> {
     private List<ExamQuestion> examQuestions = new ArrayList<>();
 
     @OneToMany(mappedBy = "exam")
-    private List<ExamInstance> exams = new ArrayList<>();
+    private List<ExamInstance> examInstance = new ArrayList<>();
 }

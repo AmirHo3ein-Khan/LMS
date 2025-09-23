@@ -1,7 +1,7 @@
 package ir.lms.service;
 
-import ir.lms.util.dto.auth.AuthRequestDTO;
-import ir.lms.util.dto.auth.AuthResponseDTO;
+import ir.lms.dto.auth.AuthRequestDTO;
+import ir.lms.dto.auth.AuthResponseDTO;
 import ir.lms.model.Person;
 import ir.lms.model.Role;
 import ir.lms.service.base.BaseService;

@@ -25,7 +25,7 @@ public class Option extends BaseEntity<Long> {
     private String optionText;
 
     @Column(nullable = false)
-    private boolean isCorrect;
+    private boolean correct;
 
     @ManyToOne
     @JoinColumn(name = "question_id")

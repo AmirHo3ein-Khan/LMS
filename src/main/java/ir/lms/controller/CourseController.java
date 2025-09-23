@@ -1,10 +1,10 @@
 package ir.lms.controller;
 
-import ir.lms.util.dto.ApiResponseDTO;
-import ir.lms.util.mapper.CourseMapper;
+import ir.lms.dto.ApiResponseDTO;
+import ir.lms.mapper.CourseMapper;
 import ir.lms.model.Course;
 import ir.lms.service.CourseService;
-import ir.lms.util.dto.course.CourseDTO;
+import ir.lms.dto.course.CourseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,7 +28,7 @@ public class CourseController {
     @PostMapping
     public ResponseEntity<CourseDTO> save(@RequestBody CourseDTO dto) {
         Course course = courseService.persist(courseMapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.CREATED).body(courseMapper.toDto(courseService.persist(course)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(courseMapper.toDto(course));
     }
 
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
@@ -57,6 +57,14 @@ public class CourseController {
     public ResponseEntity<List<CourseDTO>> findAll() {
         List<CourseDTO> courseDTOS = new ArrayList<>();
         for (Course course : courseService.findAll()) courseDTOS.add(courseMapper.toDto(course));
+        return ResponseEntity.ok(courseDTOS);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/major/courses")
+    public ResponseEntity<List<CourseDTO>> findAllMajorCourses(@RequestBody String majorName) {
+        List<CourseDTO> courseDTOS = new ArrayList<>();
+        for (Course course : courseService.findAllMajorCourses(majorName)) courseDTOS.add(courseMapper.toDto(course));
         return ResponseEntity.ok(courseDTOS);
     }
 }
