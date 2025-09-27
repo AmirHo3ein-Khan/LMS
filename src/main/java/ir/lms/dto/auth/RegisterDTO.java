@@ -13,5 +13,4 @@ public class RegisterDTO {
     private String nationalCode ;
     private String phoneNumber;
     private String majorName;
-    private String role;
 }

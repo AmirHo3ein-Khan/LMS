@@ -21,7 +21,7 @@ import java.util.List;
 @SuperBuilder
 public class ExamQuestion extends BaseEntity<Long> {
 
-    private Double questionScore;
+    private double questionScore;
 
     @ManyToOne
     @JoinColumn(name = "question_id")

@@ -31,7 +31,7 @@ public class Question extends BaseEntity<Long> {
     @NotNull(message = "Question text cannot be null")
     private String questionText;
 
-    private Double defaultScore;
+    private double defaultScore;
 
     @OneToMany(mappedBy = "question")
     private List<ExamQuestion> examQuestions = new ArrayList<>();

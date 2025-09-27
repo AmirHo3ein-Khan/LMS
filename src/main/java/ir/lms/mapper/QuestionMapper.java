@@ -1,19 +1,20 @@
 package ir.lms.mapper;
 
+import ir.lms.dto.option.OptionDTO;
 import ir.lms.dto.question.QuestionDTO;
 import ir.lms.dto.term.TermDTO;
 import ir.lms.exception.EntityNotFoundException;
 import ir.lms.mapper.base.BaseMapper;
-import ir.lms.model.Course;
-import ir.lms.model.Major;
-import ir.lms.model.Question;
-import ir.lms.model.Term;
+import ir.lms.model.*;
 import ir.lms.repository.CourseRepository;
 import ir.lms.repository.MajorRepository;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Mapper(componentModel = "spring")
 public abstract class QuestionMapper implements BaseMapper<Question, QuestionDTO> {
@@ -23,6 +24,9 @@ public abstract class QuestionMapper implements BaseMapper<Question, QuestionDTO
 
     @Autowired
     private MajorRepository majorRepository;
+
+    @Autowired
+    private OptionMapper optionMapper;
 
     public abstract QuestionDTO toDto(Question entity);
 
@@ -49,6 +53,18 @@ public abstract class QuestionMapper implements BaseMapper<Question, QuestionDTO
     @AfterMapping
     protected void afterToDTO(Question entity, @MappingTarget QuestionDTO dto) {
         if (entity.getCourse() != null) {
+            if (entity instanceof TestQuestion) {
+                dto.setQuestionType("TEST");
+                List<Option> options = ((TestQuestion) entity).getOptions();
+                List<OptionDTO> optionDTOList = new ArrayList<>();
+                for (Option option : options) {
+                    optionDTOList.add(optionMapper.toDto(option));
+                }
+                dto.setOptions(optionDTOList);
+            }
+            if (entity instanceof DescriptiveQuestion) {
+                dto.setQuestionType("DESCRIPTIVE");
+            }
             dto.setCourseName(entity.getCourse().getTitle());
             dto.setMajorName(entity.getCourse().getMajor().getMajorName());
         }

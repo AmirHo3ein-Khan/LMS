@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @NoArgsConstructor
 @SuperBuilder
-@DiscriminatorValue("MULTIPLE_CHOICE_ANSWER")
+@DiscriminatorValue("TEST_ANSWER")
 public class TestAnswer extends Answer {
     @ManyToOne
     @JoinColumn(name = "option_id")

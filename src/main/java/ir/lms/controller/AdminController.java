@@ -1,6 +1,7 @@
 package ir.lms.controller;
 
 import ir.lms.dto.auth.RegisterDTO;
+import ir.lms.model.Person;
 import ir.lms.service.AuthService;
 import ir.lms.dto.ApiResponseDTO;
 import ir.lms.dto.auth.AddRoleRequest;
@@ -26,7 +27,8 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     @PostMapping("/teacher/register")
     public ResponseEntity<ApiResponseDTO> teacherRegister(@RequestBody RegisterDTO request) {
-       authService.persist(registerMapper.toEntity(request));
+        Person person = authService.persist(registerMapper.toEntity(request));
+        authService.addRoleToPerson("teacher" , person.getId());
         ApiResponseDTO responseDTO = new ApiResponseDTO("Register success" , true);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
@@ -34,7 +36,8 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/manager/register")
     public ResponseEntity<ApiResponseDTO> managerRegister(@RequestBody RegisterDTO request) {
-        authService.persist(registerMapper.toEntity(request));
+        Person person = authService.persist(registerMapper.toEntity(request));
+        authService.addRoleToPerson("manager" , person.getId());
         ApiResponseDTO responseDTO = new ApiResponseDTO("Register success" , true);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }

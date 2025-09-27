@@ -23,9 +23,6 @@ public abstract class RegisterMapper implements BaseMapper<Person ,RegisterDTO>{
     @Autowired
     private MajorRepository majorRepository;
 
-    @Autowired
-    private RoleRepository roleRepository;
-
     public abstract RegisterDTO toDto(Person entity);
 
     public abstract Person toEntity(PersonDTO dto);
@@ -40,14 +37,6 @@ public abstract class RegisterMapper implements BaseMapper<Person ,RegisterDTO>{
                     ));
             person.setMajor(major);
         }
-        if (dto.getRole() != null) {
-            Role role = roleRepository.findByName(dto.getRole().toUpperCase())
-                    .orElseThrow(() -> new EntityNotFoundException("Role with name " + dto.getRole() + " not found"));
-
-            List<Role> roles = new ArrayList<>();
-            roles.add(role);
-            person.setRoles(roles);
-        }
     }
 
     @AfterMapping
@@ -59,12 +48,6 @@ public abstract class RegisterMapper implements BaseMapper<Person ,RegisterDTO>{
                             "Major with name " + dto.getMajorName() + " not found"
                     ));
             dto.setMajorName(major.getMajorName());
-        }
-        if (person.getAccount().getActiveRole() != null) {
-            Role role = roleRepository.findByName(person.getAccount().getActiveRole().getName())
-                    .orElseThrow(() -> new EntityNotFoundException("Role with name " + dto.getRole() + " not found"));
-
-            dto.setRole(role.getName());
         }
     }
 }

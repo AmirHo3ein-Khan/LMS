@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,15 +24,14 @@ import java.util.List;
 public class ExamInstance extends BaseEntity<Long> {
 
     @NotNull(message = "Start date of exam for student cannot be null")
-    private LocalDateTime startAt;
+    private Instant startAt;
 
-    @NotNull(message = "End date of exam for student cannot be null")
-    private LocalDateTime endAt;
+    private Instant endAt;
 
     @Enumerated(EnumType.STRING)
     private ExamInstanceStatus status;
 
-    private Double totalScore;
+    private double totalScore;
 
     @ManyToOne
     @JoinColumn(name = "student_id")

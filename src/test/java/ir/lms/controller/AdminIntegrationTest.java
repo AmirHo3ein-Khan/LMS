@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class AdminControllerTest {
+class AdminIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -104,7 +104,6 @@ class AdminControllerTest {
                 .phoneNumber(randomPhone())
                 .nationalCode(randomNationalCode())
                 .majorName("Computer")
-                .role("teacher")
                 .build();
 
         mockMvc.perform(post("/api/admin/teacher/register")
@@ -122,7 +121,6 @@ class AdminControllerTest {
                 .phoneNumber(randomPhone())
                 .nationalCode(randomNationalCode())
                 .majorName("Computer")
-                .role("manager")
                 .build();
 
         mockMvc.perform(post("/api/admin/manager/register")

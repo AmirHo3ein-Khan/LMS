@@ -1,7 +1,6 @@
 package ir.lms.service.impl;
 
 import ir.lms.exception.EntityNotFoundException;
-import ir.lms.exception.OptionSizeException;
 import ir.lms.model.*;
 import ir.lms.repository.AccountRepository;
 import ir.lms.repository.ExamQuestionRepository;
@@ -11,14 +10,12 @@ import ir.lms.service.QuestionService;
 import ir.lms.service.base.BaseServiceImpl;
 import ir.lms.util.QuestionFactory;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.security.Principal;
 import java.util.List;
 
 @Service
-public class QuestionServiceImpl extends BaseServiceImpl<Question, Long> implements QuestionService  {
+public class QuestionServiceImpl extends BaseServiceImpl<Question, Long> implements QuestionService {
 
     private final QuestionFactory questionFactory;
     private final AccountRepository accountRepository;
@@ -34,8 +31,9 @@ public class QuestionServiceImpl extends BaseServiceImpl<Question, Long> impleme
         this.questionRepository = questionRepository;
         this.examQuestionRepository = examQuestionRepository;
     }
-    public Question createQuestion(String type , Question question , List<Option> options) {
-        Question q = questionFactory.createQuestion(type, question , options);
+
+    public Question createQuestion(String type, Question question, List<Option> options) {
+        Question q = questionFactory.createQuestion(type, question, options);
         return persist(q);
     }
 
@@ -47,13 +45,13 @@ public class QuestionServiceImpl extends BaseServiceImpl<Question, Long> impleme
         if (question.getQuestionText() == null) {
             throw new IllegalArgumentException("Question text cannot be null");
         }
-        if (question.getDefaultScore() == null) {
+        if (question.getDefaultScore() == 0) {
             throw new IllegalArgumentException("Default score cannot be null");
         }
     }
 
     @Override
-    public void assignQuestionToExam(Long examId, Long questionId , Double score) {
+    public void assignQuestionToExam(Long examId, Long questionId, Double score) {
         ExamTemplate exam = examRepository.findById(examId)
                 .orElseThrow(() -> new EntityNotFoundException("Exam not found!"));
 
@@ -63,12 +61,25 @@ public class QuestionServiceImpl extends BaseServiceImpl<Question, Long> impleme
         ExamQuestion examQuestion = new ExamQuestion();
         examQuestion.setExam(exam);
         examQuestion.setQuestion(question);
-        examQuestion.setQuestionScore(score);
+        if (score == 0) examQuestion.setQuestionScore(question.getDefaultScore());
+        else examQuestion.setQuestionScore(score);
+
 
         examQuestionRepository.save(examQuestion);
+        questionRepository.save(question);
 
         calculateTotalScore(exam);
         examRepository.save(exam);
+    }
+
+    @Override
+    public List<Question> findQuestionsByExamId(Long examId) {
+        ExamTemplate exam = examRepository.findById(examId)
+                .orElseThrow(() -> new EntityNotFoundException("Exam not found!"));
+        if (!exam.isDeleted()){
+            return questionRepository.findQuestionsOfExam(examId);
+        }
+        throw new EntityNotFoundException("Exam don't have questions!");
     }
 
 

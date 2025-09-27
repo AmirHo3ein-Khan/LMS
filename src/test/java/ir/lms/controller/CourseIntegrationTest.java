@@ -3,19 +3,11 @@ package ir.lms.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ir.lms.dto.auth.AuthRequestDTO;
 import ir.lms.dto.auth.AuthenticationResponse;
-import ir.lms.dto.major.MajorDTO;
-import ir.lms.model.Account;
-import ir.lms.model.Major;
-import ir.lms.model.Person;
-import ir.lms.model.Role;
+import ir.lms.dto.course.CourseDTO;
+import ir.lms.model.*;
 import ir.lms.model.enums.RegisterState;
-import ir.lms.repository.AccountRepository;
-import ir.lms.repository.MajorRepository;
-import ir.lms.repository.PersonRepository;
-import ir.lms.repository.RoleRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import ir.lms.repository.*;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,8 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class MajorControllerTest {
-
+class CourseIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
@@ -54,16 +45,22 @@ class MajorControllerTest {
     PasswordEncoder passwordEncoder;
 
     @Autowired
-    private AccountRepository accountRepository;
+    private CourseRepository courseRepository;
 
     @Autowired
     private MajorRepository majorRepository;
+
+    @Autowired
+    private AccountRepository accountRepository;
 
     private String accessToken;
 
 
     @BeforeEach
     void beforeEach() throws Exception {
+        courseRepository.deleteAll();
+
+
         Role role = roleRepository.findByName("ADMIN").get();
 
         Person admin = Person.builder().firstName("Admin").lastName("Admin").phoneNumber(randomPhone())
@@ -93,14 +90,17 @@ class MajorControllerTest {
         this.accessToken = authenticationResponse.getAccessToken();
     }
 
+    @AfterEach
+    void afterEach() {
+        courseRepository.deleteAll();
+    }
+
     @Test
     void save() throws Exception {
+        CourseDTO build = CourseDTO.builder().title("Course Title").description("Course Description")
+                .description("Course Description").majorName("Computer").build();
 
-        MajorDTO build = MajorDTO.builder()
-                .majorName("Electronics1")
-                .build();
-
-        mockMvc.perform(post("/api/major")
+        mockMvc.perform(post("/api/course")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(build))
                         .header("Authorization", "Bearer " + accessToken))
@@ -109,24 +109,31 @@ class MajorControllerTest {
 
     @Test
     void update() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
+        Major major = majorRepository.save(Major.builder().majorName("Accounting").build());
 
-        MajorDTO build = MajorDTO.builder()
-                .majorName("Mechanic")
-                .build();
+        Course course = Course.builder().title("Course Title").description("Course Description")
+                .description("Course Description").major(major).build();
+        courseRepository.save(course);
 
-        mockMvc.perform(put("/api/major/"+major.getId())
+        CourseDTO dto = CourseDTO.builder().title("Course Title2").description("Course Description2")
+                .description("Course Description2").majorName("Computer").build();
+
+        mockMvc.perform(put("/api/course/" + course.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build))
+                        .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
 
     @Test
     void delete() throws Exception {
-        Major major = majorRepository.save(Major.builder().majorName("Electronics").build());
+        Major major = majorRepository.save(Major.builder().majorName("English").build());
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/major/"+major.getId())
+        Course course = Course.builder().title("Course Title").description("Course Description")
+                .description("Course Description").major(major).build();
+        courseRepository.save(course);
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/course/" + course.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
@@ -134,9 +141,13 @@ class MajorControllerTest {
 
     @Test
     void findById() throws Exception {
-        Major major = majorRepository.save(Major.builder().majorName("Electronics2").deleted(false).build());
+        Major major = majorRepository.findByMajorName("Computer").get();
 
-        mockMvc.perform(get("/api/major/"+major.getId())
+        Course course = Course.builder().title("Course Title").description("Course Description")
+                .description("Course Description").major(major).build();
+        courseRepository.save(course);
+
+        mockMvc.perform(get("/api/course/" + course.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
@@ -144,11 +155,48 @@ class MajorControllerTest {
 
     @Test
     void findAll() throws Exception {
-        mockMvc.perform(get("/api/major")
+        Major major = majorRepository.findByMajorName("Computer").get();
+
+
+        Course course = Course.builder().title("Course Title")
+                .description("Course Description")
+                .major(major).build();
+        courseRepository.save(course);
+
+        Course course2 = Course.builder().title("Course Title2")
+                .description("Course Description2")
+                .major(major).build();
+
+        courseRepository.save(course2);
+
+        mockMvc.perform(get("/api/course")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void findAllMajorCourses() throws Exception {
+        Major major = majorRepository.save(Major.builder().deleted(false).majorName("IT").build());
+
+        Course course1 = Course.builder().title("Course Title1")
+                .description("Course Description1")
+                .major(major).build();
+
+        Course course2 = Course.builder().title("Course Title")
+                .description("Course Description1")
+                .major(major).build();
+
+        courseRepository.save(course1);
+        courseRepository.save(course2);
+
+        mockMvc.perform(get("/api/course/major/courses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(major.getMajorName())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+    }
+
 
     private static String randomPhone() {
         StringBuilder sb = new StringBuilder("09");
