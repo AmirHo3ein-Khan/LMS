@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,10 +33,11 @@ public class MajorController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}")
-    public ResponseEntity<MajorDTO> update(@PathVariable Long id , @RequestBody MajorDTO dto) {
-        Major major = majorService.persist(majorMapper.toEntity(dto));
-        major.setId(id);
+    @PutMapping("/{majorId}")
+    public ResponseEntity<MajorDTO> update(@PathVariable Long majorId, @RequestBody MajorDTO dto) {
+        Major foundedMajor = majorService.findById(majorId);
+        foundedMajor.setMajorName(dto.getMajorName());
+        Major major = majorService.persist(foundedMajor);
         return ResponseEntity.ok(majorMapper.toDto(major));
     }
 
@@ -44,7 +46,7 @@ public class MajorController {
     public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
         majorService.delete(id);
         return ResponseEntity.status(HttpStatus.OK)
-                .body(new ApiResponseDTO("Major deleted success." , true));
+                .body(new ApiResponseDTO("Major deleted success.", true));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -57,7 +59,9 @@ public class MajorController {
     @GetMapping
     public ResponseEntity<List<MajorDTO>> findAll() {
         List<MajorDTO> majors = new ArrayList<>();
-        for (Major m :  majorService.findAll())majors.add(majorMapper.toDto(m));
+        for (Major m : majorService.findAll()) {
+            majors.add(majorMapper.toDto(m));
+        }
         return ResponseEntity.status(HttpStatus.OK).body(majors);
     }
 }

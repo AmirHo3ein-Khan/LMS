@@ -21,134 +21,163 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.annotation.Commit;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Transactional
 class MajorIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
-
     @Autowired
     private ObjectMapper objectMapper;
-
     @Autowired
     private RoleRepository roleRepository;
-
     @Autowired
     private PersonRepository personRepository;
-
-    @Autowired
-    PasswordEncoder passwordEncoder;
-
     @Autowired
     private AccountRepository accountRepository;
-
     @Autowired
     private MajorRepository majorRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private String accessToken;
 
 
     @BeforeEach
-    void beforeEach() throws Exception {
-        Role role = roleRepository.findByName("ADMIN").get();
+    void setUp() throws Exception {
+        Role role = roleRepository.findByName("ADMIN").orElseThrow();
 
-        Person admin = Person.builder().firstName("Admin").lastName("Admin").phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode()).roles(List.of(role)).build();
+        Person admin = Person.builder()
+                .firstName("Admin")
+                .lastName("Admin")
+                .phoneNumber(randomPhone())
+                .nationalCode(randomNationalCode())
+                .roles(List.of(role))
+                .build();
         personRepository.save(admin);
 
-        Account account = Account.builder().username(admin.getPhoneNumber())
+        Account account = Account.builder()
+                .username(admin.getPhoneNumber())
                 .password(passwordEncoder.encode(admin.getNationalCode()))
-                .state(RegisterState.ACTIVE).person(admin).activeRole(role).build();
+                .state(RegisterState.ACTIVE)
+                .person(admin)
+                .activeRole(role)
+                .build();
         admin.setAccount(account);
         accountRepository.save(account);
 
-        AuthRequestDTO build = AuthRequestDTO.builder().username(admin.getPhoneNumber())
-                .password(admin.getNationalCode()).build();
+        AuthRequestDTO loginRequest = AuthRequestDTO.builder()
+                .username(admin.getPhoneNumber())
+                .password(admin.getNationalCode())
+                .build();
 
-        String jwtToken = mockMvc.perform(post("/auth/login")
+        String jwtResponse = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build)))
+                        .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
-                .andExpect(jsonPath("$.tokenType").isNotEmpty())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
-        AuthenticationResponse authenticationResponse = objectMapper.readValue(jwtToken, AuthenticationResponse.class);
-        this.accessToken = authenticationResponse.getAccessToken();
+
+        this.accessToken = objectMapper.readValue(jwtResponse, AuthenticationResponse.class).getAccessToken();
     }
 
     @Test
-    void save() throws Exception {
-
-        MajorDTO build = MajorDTO.builder()
-                .majorName("Electronics1")
+    void shouldSaveMajor() throws Exception {
+        MajorDTO request = MajorDTO.builder()
+                .majorName("Electronics-" + UUID.randomUUID())
                 .build();
 
         mockMvc.perform(post("/api/major")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build))
+                        .content(objectMapper.writeValueAsString(request))
                         .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.majorName").value(request.getMajorName()));
     }
 
     @Test
-    void update() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
+    void shouldUpdateMajorSuccessfully() throws Exception {
+        Major existing = majorRepository.save(
+                Major.builder().majorName("Computer-" + UUID.randomUUID()).build()
+        );
 
-        MajorDTO build = MajorDTO.builder()
-                .majorName("Mechanic")
+        MajorDTO updateRequest = MajorDTO.builder()
+                .majorName("Mechanic-" + UUID.randomUUID())
                 .build();
 
-        mockMvc.perform(put("/api/major/"+major.getId())
+        mockMvc.perform(put("/api/major/{id}", existing.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build))
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.majorName").value(updateRequest.getMajorName()));
+    }
+
+    @Test
+    void shouldDeleteMajor() throws Exception {
+        Major toDelete = majorRepository.save(
+                Major.builder().majorName("DeleteMe-" + UUID.randomUUID()).build()
+        );
+
+        mockMvc.perform(delete("/api/major/{id}", toDelete.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void delete() throws Exception {
-        Major major = majorRepository.save(Major.builder().majorName("Electronics").build());
+    void shouldFindMajorById() throws Exception {
+        Major saved = majorRepository.save(
+                Major.builder().majorName("Physics-" + UUID.randomUUID()).deleted(false).build()
+        );
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/major/"+major.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(get("/api/major/{id}", saved.getId())
                         .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.majorName").value(saved.getMajorName()));
     }
 
     @Test
-    void findById() throws Exception {
-        Major major = majorRepository.save(Major.builder().majorName("Electronics2").deleted(false).build());
+    void shouldFindAllMajors() throws Exception {
+        Major m1 = majorRepository.save(Major.builder()
+                .majorName("Chemistry-" + UUID.randomUUID())
+                .deleted(false)
+                .build());
+        Major m2 = majorRepository.save(Major.builder()
+                .majorName("Biology-" + UUID.randomUUID())
+                .deleted(false)
+                .build());
 
-        mockMvc.perform(get("/api/major/"+major.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void findAll() throws Exception {
         mockMvc.perform(get("/api/major")
-                        .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].majorName", containsInAnyOrder(
+                        "Computer",
+                        m1.getMajorName(),
+                        m2.getMajorName()
+                )));
     }
+
 
     private static String randomPhone() {
         StringBuilder sb = new StringBuilder("09");

@@ -1,14 +1,15 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ir.lms.dto.auth.AuthRequestDTO;
+import ir.lms.dto.auth.AuthenticationResponse;
+import ir.lms.dto.offeredCourse.OfferedCourseDTO;
 import ir.lms.model.*;
 import ir.lms.model.enums.CourseStatus;
 import ir.lms.model.enums.RegisterState;
 import ir.lms.model.enums.Semester;
 import ir.lms.repository.*;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
-import ir.lms.dto.offeredCourse.OfferedCourseDTO;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -19,473 +20,221 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Transactional
 class OfferedCourseIntegrationTest {
-    @Autowired
-    private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private PersonRepository personRepository;
-
-    @Autowired
-    PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private AccountRepository accountRepository;
-
-    @Autowired
-    private MajorRepository majorRepository;
-
-    @Autowired
-    private CourseRepository courseRepository;
-
-    @Autowired
-    private TermRepository termRepository;
-
-    @Autowired
-    private OfferedCourseRepository offeredCourseRepository;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private RoleRepository roleRepository;
+    @Autowired private PersonRepository personRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private AccountRepository accountRepository;
+    @Autowired private MajorRepository majorRepository;
+    @Autowired private CourseRepository courseRepository;
+    @Autowired private TermRepository termRepository;
+    @Autowired private OfferedCourseRepository offeredCourseRepository;
 
     private String accessToken;
 
-
     @BeforeEach
     void beforeEach() throws Exception {
-        Role role = roleRepository.findByName("ADMIN").get();
-
-        Person admin = Person.builder().firstName("Admin").lastName("Admin").phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode()).roles(List.of(role)).build();
-        personRepository.save(admin);
-
-        Account account = Account.builder().username(admin.getPhoneNumber())
-                .password(passwordEncoder.encode(admin.getNationalCode()))
-                .state(RegisterState.ACTIVE).person(admin).activeRole(role).build();
-        admin.setAccount(account);
-        accountRepository.save(account);
-
-        AuthRequestDTO build = AuthRequestDTO.builder().username(admin.getPhoneNumber())
-                .password(admin.getNationalCode()).build();
-
-        String jwtToken = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
-                .andExpect(jsonPath("$.tokenType").isNotEmpty())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        AuthenticationResponse authenticationResponse = objectMapper.readValue(jwtToken, AuthenticationResponse.class);
-        this.accessToken = authenticationResponse.getAccessToken();
+        this.accessToken = loginAsAdmin();
     }
 
-
-
     @Test
-    void createOfferedCourse() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
+    void createOfferedCourseTest() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course9", major);
+        Person teacher = createTeacher(major);
+        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
 
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
-
-        Role role = roleRepository.findByName("TEACHER").get();
-
-        Person teacher = Person.builder().firstName("teacher").lastName("teacher").phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode()).major(major).roles(List.of(role)).build();
-        personRepository.save(teacher);
-
-        Account account = Account.builder().username(teacher.getPhoneNumber())
-                .password(passwordEncoder.encode(teacher.getNationalCode()))
-                .state(RegisterState.ACTIVE).person(teacher).activeRole(role).build();
-        teacher.setAccount(account);
-        accountRepository.save(account);
-
-
-        Term term = termRepository.save(Term.builder()
-                .startDate(LocalDate.of(2025, 11, 10))
-                .endDate(LocalDate.of(2025, 11, 20))
-                .semester(Semester.FALL)
-                .major(major).build());
-
-        OfferedCourseDTO offeredCourse = OfferedCourseDTO.builder()
+        OfferedCourseDTO dto = OfferedCourseDTO.builder()
                 .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z")).capacity(20)
-                .classLocation("tehran").courseId(course.getId())
-                .teacherId(teacher.getId()).termId(term.getId()).build();
+                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
+                .capacity(20)
+                .classLocation("Tehran")
+                .courseId(course.getId())
+                .teacherId(teacher.getId())
+                .termId(term.getId())
+                .build();
 
         mockMvc.perform(post("/api/offeredCourse")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(offeredCourse))
+                        .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated());
     }
 
-
-
     @Test
-    void update() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
+    void updateOfferedCourseTest() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course10", major);
+        Person teacher = createTeacher(major);
+        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        OfferedCourse offeredCourse = createOfferedCourse(course, term);
 
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
-
-        Role role = roleRepository.findByName("TEACHER").get();
-
-        Person teacher = Person.builder().firstName("teacher").lastName("teacher").phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode()).major(major).roles(List.of(role)).build();
-        personRepository.save(teacher);
-
-        Account account = Account.builder().username(teacher.getPhoneNumber())
-                .password(passwordEncoder.encode(teacher.getNationalCode()))
-                .state(RegisterState.ACTIVE).person(teacher).activeRole(role).build();
-        teacher.setAccount(account);
-        accountRepository.save(account);
-
-        Term term = termRepository.save(Term.builder()
-                .startDate(LocalDate.of(2025, 11, 10))
-                .endDate(LocalDate.of(2025, 11, 20))
-                .semester(Semester.FALL)
-                .major(major).build());
-
-        OfferedCourse offeredCourse = OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
-                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
-                .capacity(20).classLocation("Mashhad").build();
-
-        offeredCourseRepository.save(offeredCourse);
-
-        OfferedCourseDTO offeredCourseDTO = OfferedCourseDTO.builder()
+        OfferedCourseDTO dto = OfferedCourseDTO.builder()
                 .startTime(Instant.parse("2026-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2026-11-23T12:00:00Z")).capacity(20)
-                .classLocation("tehran").courseId(course.getId())
-                .teacherId(teacher.getId()).termId(term.getId()).build();
+                .endTime(Instant.parse("2026-11-23T12:00:00Z"))
+                .capacity(20)
+                .classLocation("Tehran")
+                .courseId(course.getId())
+                .teacherId(teacher.getId())
+                .termId(term.getId())
+                .build();
 
         mockMvc.perform(put("/api/offeredCourse/" + offeredCourse.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(offeredCourseDTO))
+                        .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
 
-
-
-
     @Test
-    void delete() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
+    void deleteOfferedCourseTest() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course11", major);
+        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        OfferedCourse offeredCourse = createOfferedCourse(course, term);
 
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
-
-        Role role = roleRepository.findByName("TEACHER").get();
-
-        Person teacher = Person.builder().firstName("teacher").lastName("teacher").phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode()).major(major).roles(List.of(role)).build();
-        personRepository.save(teacher);
-
-        Account account = Account.builder().username(teacher.getPhoneNumber())
-                .password(passwordEncoder.encode(teacher.getNationalCode()))
-                .state(RegisterState.ACTIVE).person(teacher).activeRole(role).build();
-        teacher.setAccount(account);
-        accountRepository.save(account);
-
-        Term term = termRepository.save(Term.builder()
-                .startDate(LocalDate.of(2025, 11, 10))
-                .endDate(LocalDate.of(2025, 11, 20))
-                .semester(Semester.FALL)
-                .major(major).build());
-
-        OfferedCourse offeredCourse = OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
-                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
-                .capacity(20).classLocation("Mashhad").build();
-
-        offeredCourseRepository.save(offeredCourse);
-
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/offeredCourse/" + offeredCourse.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(delete("/api/offeredCourse/" + offeredCourse.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
 
-
-
     @Test
-    void findById() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
-
-        Course course = Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build();
-        courseRepository.save(course);
-
-        Role role = roleRepository.findByName("TEACHER").get();
-
-        Person teacher = Person.builder().firstName("teacher").lastName("teacher").phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode()).major(major).roles(List.of(role)).build();
-        personRepository.save(teacher);
-
-        Account account = Account.builder().username(teacher.getPhoneNumber())
-                .password(passwordEncoder.encode(teacher.getNationalCode()))
-                .state(RegisterState.ACTIVE).person(teacher).activeRole(role).build();
-        teacher.setAccount(account);
-        accountRepository.save(account);
-
-        Term term = termRepository.save(Term.builder()
-                .startDate(LocalDate.of(2025, 11, 10))
-                .endDate(LocalDate.of(2025, 11, 20))
-                .semester(Semester.FALL)
-                .major(major).build());
-
-        OfferedCourse offeredCourse = OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
-                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
-                .capacity(20).classLocation("Mashhad").build();
-
-        offeredCourseRepository.save(offeredCourse);
+    void findByIdTest() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course12", major);
+        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        OfferedCourse offeredCourse = createOfferedCourse(course, term);
 
         mockMvc.perform(get("/api/offeredCourse/" + offeredCourse.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void findAll() throws Exception {
+    void findAllTest() throws Exception {
         mockMvc.perform(get("/api/offeredCourse")
-                        .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
 
+    // ---------------- Helper Methods ----------------
 
+    private String loginAsAdmin() throws Exception {
+        Role role = roleRepository.findByName("ADMIN").get();
 
+        Person admin = createPerson("Admin", "Admin", role, null);
+        Account account = createAccount(admin, role);
+        admin.setAccount(account);
+        accountRepository.save(account);
 
+        return loginAndGetToken(admin.getPhoneNumber(), admin.getNationalCode());
+    }
 
-    @Test
-    void findAllTeacherCourses() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
+    private Person createPerson(String firstName, String lastName, Role role, Major major) {
+        Person person = Person.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .phoneNumber(randomPhone())
+                .nationalCode(randomNationalCode())
+                .roles(new ArrayList<>(List.of(role)))
+                .major(major)
+                .build();
+        return personRepository.save(person);
+    }
+
+    private Account createAccount(Person person, Role role) {
+        Account account = Account.builder()
+                .username(person.getPhoneNumber())
+                .password(passwordEncoder.encode(person.getNationalCode()))
+                .state(RegisterState.ACTIVE)
+                .person(person)
+                .activeRole(role)
+                .build();
+        person.setAccount(account);
+        return accountRepository.save(account);
+    }
+
+    private String loginAndGetToken(String username, String password) throws Exception {
+        AuthRequestDTO auth = AuthRequestDTO.builder()
+                .username(username)
+                .password(password)
+                .build();
+
+        String jwtToken = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(auth)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        return objectMapper.readValue(jwtToken, AuthenticationResponse.class).getAccessToken();
+    }
+
+    private Major getMajor(String name) {
+        return majorRepository.findByMajorName(name).get();
+    }
+
+    private Course createCourse(String title, Major major) {
+        Course course = Course.builder().title(title).description("Course Description").major(major).build();
+        return courseRepository.save(course);
+    }
+
+    private Term createTerm(Major major, LocalDate start, LocalDate end, Semester semester) {
+        Term term = Term.builder().startDate(start).endDate(end).semester(semester).major(major).build();
+        return termRepository.save(term);
+    }
+
+    private OfferedCourse createOfferedCourse(Course course, Term term) {
+        OfferedCourse offeredCourse = OfferedCourse.builder()
+                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
+                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
+                .term(term)
+                .course(course)
+                .courseStatus(CourseStatus.UNFILLED)
+                .capacity(20)
+                .classLocation("Mashhad")
+                .examTemplates(new ArrayList<>())
+                .build();
+        return offeredCourseRepository.save(offeredCourse);
+    }
+
+    private Person createTeacher(Major major) {
         Role role = roleRepository.findByName("TEACHER").get();
-
-        Person teacher = Person.builder().firstName("teacher").lastName("teacher").phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode()).major(major).roles(List.of(role)).build();
-        personRepository.save(teacher);
-
-        Account account = Account.builder().username(teacher.getPhoneNumber())
-                .password(passwordEncoder.encode(teacher.getNationalCode()))
-                .state(RegisterState.ACTIVE).person(teacher).activeRole(role).build();
-        teacher.setAccount(account);
-        accountRepository.save(account);
-
-        AuthRequestDTO build = AuthRequestDTO.builder().username(teacher.getPhoneNumber())
-                .password(teacher.getNationalCode()).build();
-
-        String jwtToken = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
-                .andExpect(jsonPath("$.tokenType").isNotEmpty())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        AuthenticationResponse authenticationResponse = objectMapper.readValue(jwtToken, AuthenticationResponse.class);
-        String accessToken = authenticationResponse.getAccessToken();
-
-        Course course = courseRepository.save(Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build());
-
-        Term term = termRepository.save(Term.builder()
-                .startDate(LocalDate.of(2025, 11, 10))
-                .endDate(LocalDate.of(2025, 11, 20))
-                .semester(Semester.FALL)
-                .major(major).build());
-
-        offeredCourseRepository.save(OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
-                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
-                .capacity(20).classLocation("Mashhad").build());
-
-        offeredCourseRepository.save(OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
-                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
-                .capacity(20).classLocation("tehran").build());
-
-        mockMvc.perform(get("/api/offeredCourse/teacher/courses")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
+        Person teacher = createPerson("Teacher", "Teacher", role, major);
+        createAccount(teacher, role);
+        return teacher;
     }
-
-
-
-    @Test
-    void findAllStudentCourses() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
-        Role role = roleRepository.findByName("STUDENT").get();
-
-        Person student = Person.builder().firstName("student").lastName("student").phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode()).major(major).roles(List.of(role)).build();
-        personRepository.save(student);
-
-
-        Account account = Account.builder().username(student.getPhoneNumber())
-                .password(passwordEncoder.encode(student.getNationalCode()))
-                .state(RegisterState.ACTIVE).person(student).activeRole(role).build();
-        student.setAccount(account);
-        accountRepository.save(account);
-
-        AuthRequestDTO build = AuthRequestDTO.builder().username(student.getPhoneNumber())
-                .password(student.getNationalCode()).build();
-
-        String jwtToken = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
-                .andExpect(jsonPath("$.tokenType").isNotEmpty())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        AuthenticationResponse authenticationResponse = objectMapper.readValue(jwtToken, AuthenticationResponse.class);
-        String accessToken = authenticationResponse.getAccessToken();
-
-        Course course = courseRepository.save(Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build());
-
-        Term term = termRepository.save(Term.builder()
-                .startDate(LocalDate.of(2025, 11, 10))
-                .endDate(LocalDate.of(2025, 11, 20))
-                .semester(Semester.FALL)
-                .major(major).build());
-
-         offeredCourseRepository.save(OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
-                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
-                .capacity(20).classLocation("Mashhad").build());
-
-        offeredCourseRepository.save(OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
-                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
-                .capacity(20).classLocation("tehran").build());
-
-        mockMvc.perform(get("/api/offeredCourse/student/courses")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
-
-
-
-    @Test
-    void findAllTermCourses() throws Exception {
-        Major major = majorRepository.findByMajorName("Computer").get();
-        Role role = roleRepository.findByName("STUDENT").get();
-
-        Person student = Person.builder().firstName("student").lastName("student").phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode()).major(major).roles(List.of(role)).build();
-        personRepository.save(student);
-
-
-        Account account = Account.builder().username(student.getPhoneNumber())
-                .password(passwordEncoder.encode(student.getNationalCode()))
-                .state(RegisterState.ACTIVE).person(student).activeRole(role).build();
-        student.setAccount(account);
-        accountRepository.save(account);
-
-        AuthRequestDTO build = AuthRequestDTO.builder().username(student.getPhoneNumber())
-                .password(student.getNationalCode()).build();
-
-        String jwtToken = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
-                .andExpect(jsonPath("$.tokenType").isNotEmpty())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        AuthenticationResponse authenticationResponse = objectMapper.readValue(jwtToken, AuthenticationResponse.class);
-        String accessToken = authenticationResponse.getAccessToken();
-
-        Course course = courseRepository.save(Course.builder().title("Course Title").description("Course Description")
-                .description("Course Description").major(major).build());
-
-        Term term = termRepository.save(Term.builder()
-                .startDate(LocalDate.of(2025, 11, 10))
-                .endDate(LocalDate.of(2025, 11, 20))
-                .semester(Semester.FALL)
-                .major(major).build());
-
-        offeredCourseRepository.save(OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
-                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
-                .capacity(20).classLocation("Mashhad").build());
-
-        offeredCourseRepository.save(OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
-                .term(term).course(course).courseStatus(CourseStatus.UNFILLED)
-                .capacity(20).classLocation("tehran").build());
-
-
-        mockMvc.perform(get("/api/offeredCourse/term/courses/" + term.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
-
-
-
 
 
     private static String randomPhone() {
         StringBuilder sb = new StringBuilder("09");
-        for (int i = 0; i < 9; i++) {
-            sb.append(ThreadLocalRandom.current().nextInt(0, 10));
-        }
+        for (int i = 0; i < 9; i++) sb.append(ThreadLocalRandom.current().nextInt(0, 10));
         return sb.toString();
     }
 
     private static String randomNationalCode() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 10; i++) {
-            sb.append(ThreadLocalRandom.current().nextInt(0, 10));
-        }
+        for (int i = 0; i < 10; i++) sb.append(ThreadLocalRandom.current().nextInt(0, 10));
         return sb.toString();
     }
 }

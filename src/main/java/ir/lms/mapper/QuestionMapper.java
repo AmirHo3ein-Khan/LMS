@@ -40,7 +40,7 @@ public abstract class QuestionMapper implements BaseMapper<Question, QuestionDTO
                     .orElseThrow(() -> new EntityNotFoundException(
                             "Major with name " + dto.getMajorName() + " not found"
                     ));
-            Course course = courseRepository.findByMajor(major)
+            Course course = courseRepository.findByTitleAndMajor(dto.getCourseName(), major)
                     .orElseThrow(() -> new EntityNotFoundException(
                             "Course with name " + dto.getCourseName() + " not found"
                     ));

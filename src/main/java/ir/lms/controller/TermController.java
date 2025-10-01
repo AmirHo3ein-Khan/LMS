@@ -5,10 +5,13 @@ import ir.lms.service.TermService;
 import ir.lms.dto.ApiResponseDTO;
 import ir.lms.mapper.TermMapper;
 import ir.lms.dto.term.TermDTO;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,8 +37,10 @@ public class TermController {
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<TermDTO> update(@PathVariable Long id, @RequestBody TermDTO dto) {
-        Term term = termService.persist(termMapper.toEntity(dto));
-        term.setId(id);
+        Term foundedTerm = termService.findById(id);
+        foundedTerm.setStartDate(dto.getStartDate());
+        foundedTerm.setEndDate(dto.getEndDate());
+        Term term = termService.persist(foundedTerm);
         return ResponseEntity.ok(termMapper.toDto(term));
     }
 

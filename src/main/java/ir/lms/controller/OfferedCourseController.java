@@ -1,17 +1,22 @@
 package ir.lms.controller;
 
+import ir.lms.model.Major;
 import ir.lms.model.OfferedCourse;
+import ir.lms.model.enums.CourseStatus;
 import ir.lms.service.OfferedCourseService;
 import ir.lms.dto.ApiResponseDTO;
 import ir.lms.dto.offeredCourse.OfferedCourseDTO;
 import ir.lms.dto.offeredCourse.ResponseOfferedCourseDTO;
 import ir.lms.mapper.OfferedCourseMapper;
 import ir.lms.mapper.ResponseOfferedCourseMapper;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +36,7 @@ public class OfferedCourseController {
 
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ResponseOfferedCourseDTO> createOfferedCourse(@RequestBody OfferedCourseDTO dto) {
+    public ResponseEntity<ResponseOfferedCourseDTO> create(@RequestBody OfferedCourseDTO dto) {
         OfferedCourse offeredCourse = offeredCourseService.persist(mapper.toEntity(dto));
         return ResponseEntity.status(HttpStatus.CREATED).body(respMapper.toDto(offeredCourse));
     }
@@ -39,8 +44,12 @@ public class OfferedCourseController {
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<ResponseOfferedCourseDTO> update(@PathVariable Long id, @RequestBody OfferedCourseDTO dto) {
-        OfferedCourse offeredCourse = offeredCourseService.persist(mapper.toEntity(dto));
-        offeredCourse.setId(id);
+        OfferedCourse foundedCourse = offeredCourseService.findById(id);
+        foundedCourse.setEndTime(dto.getEndTime());
+        foundedCourse.setCapacity(dto.getCapacity());
+        foundedCourse.setClassLocation(dto.getClassLocation());
+        foundedCourse.setStartTime(dto.getStartTime());
+        OfferedCourse offeredCourse = offeredCourseService.persist(foundedCourse);
         return ResponseEntity.ok(respMapper.toDto(offeredCourse));
     }
 

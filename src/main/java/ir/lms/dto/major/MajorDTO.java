@@ -10,7 +10,6 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MajorDTO {
-
     @NotBlank(message = "Major cannot be empty")
     @NotNull(message = "Major cannot be null")
     private String majorName;

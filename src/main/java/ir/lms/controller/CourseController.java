@@ -34,8 +34,11 @@ public class CourseController {
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<CourseDTO> update(@PathVariable Long id, @RequestBody CourseDTO dto) {
-        Course course = courseService.persist(courseMapper.toEntity(dto));
-        course.setId(id);
+        Course foundedCourse = courseService.findById(id);
+        foundedCourse.setTitle(dto.getTitle());
+        foundedCourse.setDescription(dto.getDescription());
+        foundedCourse.setUnit(dto.getUnit());
+        Course course = courseService.persist(foundedCourse);
         return ResponseEntity.ok(courseMapper.toDto(course));
     }
 

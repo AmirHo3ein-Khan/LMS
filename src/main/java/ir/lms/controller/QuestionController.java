@@ -11,6 +11,7 @@ import ir.lms.model.ExamTemplate;
 import ir.lms.model.Option;
 import ir.lms.model.Question;
 import ir.lms.service.QuestionService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -41,7 +42,8 @@ public class QuestionController {
             }
         }
         Question entity = questionMapper.toEntity(dto);
-        return ResponseEntity.ok(questionMapper.toDto(questionService.createQuestion(dto.getQuestionType(), entity, options)));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(questionMapper.toDto(questionService.createQuestion(dto.getQuestionType(), entity, options)));
     }
 
     @PreAuthorize("hasRole('TEACHER')")
@@ -54,7 +56,7 @@ public class QuestionController {
 
     @PreAuthorize("hasRole('TEACHER') or hasRole('STUDENT')")
     @GetMapping("/exam/questions/{examId}")
-    public ResponseEntity<List<QuestionDTO>> findAllExamsOfACourse(@PathVariable Long examId) {
+    public ResponseEntity<List<QuestionDTO>> findAllQuestionsOfAExam(@PathVariable Long examId) {
         List<QuestionDTO> questionDTOList = new ArrayList<>();
         for (Question question : questionService.findQuestionsByExamId(examId)) questionDTOList.add(questionMapper.toDto(question));
         return ResponseEntity.ok(questionDTOList);

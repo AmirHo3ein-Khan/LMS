@@ -21,5 +21,5 @@ public interface CourseRepository extends JpaRepository<Course,Long> {
             "WHERE c.title = :title AND c.major.id = :majorId")
     boolean existsByMajorAndTitle(@Param("majorId") Long majorId, @Param("title") String title);
 
-    Optional<Course> findByMajor(Major major);
+    Optional<Course> findByTitleAndMajor(String title, Major major);
 }

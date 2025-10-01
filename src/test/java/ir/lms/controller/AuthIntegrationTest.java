@@ -10,7 +10,10 @@ import ir.lms.model.enums.RegisterState;
 import ir.lms.repository.AccountRepository;
 import ir.lms.repository.PersonRepository;
 import ir.lms.repository.RoleRepository;
-import org.junit.jupiter.api.*;
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,15 +22,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Transactional
 class AuthIntegrationTest {
 
     @Autowired
@@ -48,12 +53,10 @@ class AuthIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-
     @Test
     void studentRegister() throws Exception {
-
-        PersonDTO build = PersonDTO.builder()
-                .firstName("Amir hossein")
+        PersonDTO dto = PersonDTO.builder()
+                .firstName("Amir Hossein")
                 .lastName("Khanalipour")
                 .phoneNumber(randomPhone())
                 .nationalCode(randomNationalCode())
@@ -62,26 +65,44 @@ class AuthIntegrationTest {
 
         mockMvc.perform(post("/auth/student/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build)))
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated());
     }
 
     @Test
     void login() throws Exception {
-        Role role = roleRepository.findByName("ADMIN").get();
+        Role adminRole = roleRepository.findByName("ADMIN").orElseThrow();
 
+        Person admin = createAdminPerson(adminRole);
+
+        AuthRequestDTO loginRequest = AuthRequestDTO.builder()
+                .username(admin.getNationalCode())
+                .password(admin.getPhoneNumber())
+                .build();
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.refreshToken").isNotEmpty())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.tokenType").isNotEmpty());
+    }
+
+    private Person createAdminPerson(Role role) {
         Person admin = Person.builder()
                 .firstName("Admin")
                 .lastName("Admin")
-                .phoneNumber(randomPhone())
                 .nationalCode(randomNationalCode())
+                .phoneNumber(randomPhone())
                 .roles(List.of(role))
                 .build();
 
         personRepository.save(admin);
+
         Account account = Account.builder()
-                .username(admin.getPhoneNumber())
-                .password(passwordEncoder.encode(admin.getNationalCode()))
+                .username(admin.getNationalCode())
+                .password(passwordEncoder.encode(admin.getPhoneNumber()))
                 .state(RegisterState.ACTIVE)
                 .person(admin)
                 .activeRole(role)
@@ -90,19 +111,8 @@ class AuthIntegrationTest {
         admin.setAccount(account);
         accountRepository.save(account);
 
-        AuthRequestDTO build = AuthRequestDTO.builder().username(admin.getPhoneNumber()).password(admin.getNationalCode()).build();
-
-         mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(build)))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.refreshToken").isNotEmpty())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.tokenType").isNotEmpty());
+        return admin;
     }
-
-
-
 
     private static String randomPhone() {
         StringBuilder sb = new StringBuilder("09");

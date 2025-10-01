@@ -10,4 +10,5 @@ public interface QuestionService extends BaseService<Question, Long> {
     Question createQuestion(String type , Question question , List<Option> options);
     void assignQuestionToExam(Long examId, Long questionId, Double score);
     List<Question> findQuestionsByExamId(Long examId);
+//    getquestionbycourse
 }

@@ -34,8 +34,12 @@ public class ExamController {
     @PreAuthorize("hasRole('TEACHER')")
     @PutMapping("/{id}")
     public ResponseEntity<ExamDTO> update(@PathVariable Long id, @RequestBody ExamDTO dto) {
-        ExamTemplate exam = examService.persist(examMapper.toEntity(dto));
-        exam.setId(id);
+        ExamTemplate foundedExam = examService.findById(id);
+        foundedExam.setTitle(dto.getTitle());
+        foundedExam.setExamStartTime(dto.getExamStartTime());
+        foundedExam.setExamEndTime(dto.getExamEndTime());
+        foundedExam.setDescription(dto.getDescription());
+        ExamTemplate exam = examService.persist(foundedExam);
         return ResponseEntity.ok(examMapper.toDto(exam));
     }
 

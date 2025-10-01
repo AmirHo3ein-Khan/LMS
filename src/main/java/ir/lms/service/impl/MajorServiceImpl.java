@@ -36,6 +36,14 @@ public class MajorServiceImpl extends BaseServiceImpl<Major , Long> implements M
     }
 
     @Override
+    protected void preUpdate(Major major) {
+        Major foundedMajor = majorRepository.findById(major.getId())
+                .orElseThrow(() -> new EntityNotFoundException(NOT_FOUND));
+        major.setUpdatedAt(foundedMajor.getUpdatedAt());
+        major.setVersion(foundedMajor.getVersion());
+    }
+
+    @Override
     public void delete(Long aLong) {
         Major major = majorRepository.findById(aLong)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Major")));
@@ -48,7 +56,7 @@ public class MajorServiceImpl extends BaseServiceImpl<Major , Long> implements M
         List<Major> majors = majorRepository.findAll();
         List<Major> result = new ArrayList<>();
         for (Major major : majors) {
-            if (major.isDeleted()) {
+            if (!major.isDeleted()) {
                 result.add(major);
             }
         }
