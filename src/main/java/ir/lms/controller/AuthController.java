@@ -7,6 +7,7 @@ import ir.lms.model.Person;
 import ir.lms.dto.ApiResponseDTO;
 import ir.lms.service.AuthService;
 import ir.lms.mapper.PersonMapper;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +27,7 @@ public class AuthController {
     }
 
     @PostMapping("/student/register")
-    public ResponseEntity<ApiResponseDTO> studentRegister(@RequestBody PersonDTO request) {
+    public ResponseEntity<ApiResponseDTO> studentRegister(@Valid @RequestBody PersonDTO request) {
         Person person = authService.persist(personMapper.toEntity(request));
         authService.addRoleToPerson("student" , person.getId());
         ApiResponseDTO responseDTO = new ApiResponseDTO("Register success" , true);
@@ -35,7 +36,7 @@ public class AuthController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@RequestBody AuthRequestDTO request) {
+    public ResponseEntity<AuthResponseDTO> login(@Valid  @RequestBody AuthRequestDTO request) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.login(request));
     }
 

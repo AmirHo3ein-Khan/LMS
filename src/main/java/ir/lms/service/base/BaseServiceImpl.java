@@ -20,20 +20,9 @@ public abstract class BaseServiceImpl<T extends BaseEntity<ID>, ID extends Seria
 
     @Override
     public T persist(T t) {
-        boolean isNew = t.getId() == null;
-        if (isNew) {
-            prePersist(t);
-        } else {
-            repository.findById(t.getId())
-                    .orElseThrow(() -> new EntityNotFoundException(ENTITY_NOT_FOUND));
-            preUpdate(t);
-        }
+        prePersist(t);
         T saved = repository.save(t);
-        if (isNew) {
-            postPersist(saved);
-        } else {
-            postUpdate(saved);
-        }
+        postPersist(saved);
         return saved;
     }
 
@@ -56,22 +45,19 @@ public abstract class BaseServiceImpl<T extends BaseEntity<ID>, ID extends Seria
     }
 
 
-    protected void prePersist(T t){
+    public abstract T update(ID id, T t);
+
+
+    protected void prePersist(T t) {
     }
 
-    protected void postPersist(T t){
+    protected void postPersist(T t) {
     }
 
-    protected void preUpdate(T t){
+    protected void preDelete(ID id) {
     }
 
-    protected void postUpdate(T t){
-    }
-
-    protected void preDelete(ID id){
-    }
-
-    protected void postDelete(ID id){
+    protected void postDelete(ID id) {
     }
 
 }

@@ -2,39 +2,52 @@ package ir.lms.service.impl;
 
 import ir.lms.exception.EntityNotFoundException;
 import ir.lms.model.*;
-import ir.lms.repository.AccountRepository;
-import ir.lms.repository.ExamQuestionRepository;
-import ir.lms.repository.ExamRepository;
-import ir.lms.repository.QuestionRepository;
+import ir.lms.repository.*;
 import ir.lms.service.QuestionService;
 import ir.lms.service.base.BaseServiceImpl;
 import ir.lms.util.QuestionFactory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
+import java.security.Principal;
 import java.util.List;
 
 @Service
 public class QuestionServiceImpl extends BaseServiceImpl<Question, Long> implements QuestionService {
 
     private final QuestionFactory questionFactory;
-    private final AccountRepository accountRepository;
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
     private final ExamQuestionRepository examQuestionRepository;
+    private final CourseRepository courseRepository;
+    private final AccountRepository accountRepository;
 
-    protected QuestionServiceImpl(JpaRepository<Question, Long> repository, QuestionFactory questionFactory, AccountRepository accountRepository, ExamRepository examRepository, QuestionRepository questionRepository, ExamQuestionRepository examQuestionRepository) {
+    protected QuestionServiceImpl(JpaRepository<Question, Long> repository,
+                                  QuestionFactory questionFactory, ExamRepository examRepository,
+                                  QuestionRepository questionRepository, ExamQuestionRepository examQuestionRepository,
+                                  CourseRepository courseRepository, AccountRepository accountRepository) {
         super(repository);
         this.questionFactory = questionFactory;
-        this.accountRepository = accountRepository;
         this.examRepository = examRepository;
         this.questionRepository = questionRepository;
         this.examQuestionRepository = examQuestionRepository;
+        this.courseRepository = courseRepository;
+        this.accountRepository = accountRepository;
     }
 
     public Question createQuestion(String type, Question question, List<Option> options) {
         Question q = questionFactory.createQuestion(type, question, options);
         return persist(q);
+    }
+
+    @Override
+    public Question update(Long aLong, Question question) {
+        Question foundedQuestion = questionRepository.findById(aLong)
+                .orElseThrow(() -> new EntityNotFoundException("Question not found"));
+        foundedQuestion.setTitle(question.getTitle());
+        foundedQuestion.setQuestionText(question.getQuestionText());
+        foundedQuestion.setDefaultScore(question.getDefaultScore());
+        return questionRepository.save(foundedQuestion);
     }
 
     @Override
@@ -76,10 +89,26 @@ public class QuestionServiceImpl extends BaseServiceImpl<Question, Long> impleme
     public List<Question> findQuestionsByExamId(Long examId) {
         ExamTemplate exam = examRepository.findById(examId)
                 .orElseThrow(() -> new EntityNotFoundException("Exam not found!"));
-        if (!exam.isDeleted()){
+        if (!exam.isDeleted()) {
             return questionRepository.findQuestionsOfExam(examId);
         }
         throw new EntityNotFoundException("Exam don't have questions!");
+    }
+
+    @Override
+    public List<Question> findQuestionsOfCourse(Long courseId, Principal principal) {
+        Account account = accountRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new EntityNotFoundException("Account not found!"));
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new EntityNotFoundException("Course not found!"));
+        for (OfferedCourse offeredCourse : account.getPerson().getOfferedCourses()) {
+            if (offeredCourse.getCourse().equals(course)) {
+                if (!course.isDeleted()) {
+                    return course.getQuestions();
+                }
+            }
+        }
+        throw new EntityNotFoundException("Course don't have questions!");
     }
 
 

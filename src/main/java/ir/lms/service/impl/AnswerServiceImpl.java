@@ -39,4 +39,8 @@ public class AnswerServiceImpl extends BaseServiceImpl<Answer, Long> implements 
                 .orElseThrow(() -> new RuntimeException("option not found"));
     }
 
+    @Override
+    public Answer update(Long aLong, Answer answer) {
+        return null;
+    }
 }

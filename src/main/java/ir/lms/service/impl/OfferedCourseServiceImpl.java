@@ -28,15 +28,31 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
     private final static String NOT_FOUND = "%s not found!";
 
     private final AccountRepository accountRepository;
-    private final OfferedCourseRepository offeredCourseRepository;
     private final TermRepository termRepository;
+    private final OfferedCourseRepository offeredCourseRepository;
 
     public OfferedCourseServiceImpl(JpaRepository<OfferedCourse, Long> repository,
-                                    AccountRepository accountRepository, OfferedCourseRepository offeredCourseRepository, TermRepository termRepository) {
+                                    AccountRepository accountRepository, TermRepository termRepository, OfferedCourseRepository offeredCourseRepository) {
         super(repository);
         this.accountRepository = accountRepository;
-        this.offeredCourseRepository = offeredCourseRepository;
         this.termRepository = termRepository;
+        this.offeredCourseRepository = offeredCourseRepository;
+    }
+
+
+    @Override
+    public OfferedCourse update(Long aLong, OfferedCourse offeredCourse) {
+        OfferedCourse foundedOfferedCourse = offeredCourseRepository.findById(aLong)
+                .orElseThrow(() -> new EntityNotFoundException(NOT_FOUND));
+
+        LocalDate termStartDate = foundedOfferedCourse.getTerm().getStartDate();
+        if (!termStartDate.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException(ILLEGAL_AFTER_START);
+        }
+        foundedOfferedCourse.setStartTime(offeredCourse.getStartTime());
+        foundedOfferedCourse.setEndTime(offeredCourse.getEndTime());
+        foundedOfferedCourse.setCapacity(offeredCourse.getCapacity());
+        return offeredCourseRepository.save(foundedOfferedCourse);
     }
 
 
@@ -60,14 +76,6 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
             throw new IllegalArgumentException(TIME_ILLEGAL);
         }
         offeredCourse.setCourseStatus(CourseStatus.UNFILLED);
-    }
-
-    @Override
-    protected void preUpdate(OfferedCourse offeredCourse) {
-        LocalDate termStartDate = offeredCourse.getTerm().getStartDate();
-        if (!termStartDate.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException(ILLEGAL_AFTER_START);
-        }
     }
 
 

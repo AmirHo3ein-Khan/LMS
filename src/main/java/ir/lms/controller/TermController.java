@@ -5,6 +5,7 @@ import ir.lms.service.TermService;
 import ir.lms.dto.ApiResponseDTO;
 import ir.lms.mapper.TermMapper;
 import ir.lms.dto.term.TermDTO;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,19 +30,16 @@ public class TermController {
 
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<TermDTO> save(@RequestBody TermDTO termDTO) {
+    public ResponseEntity<TermDTO> save(@Valid @RequestBody TermDTO termDTO) {
         Term persist = termService.persist(termMapper.toEntity(termDTO));
         return ResponseEntity.status(HttpStatus.CREATED).body(termMapper.toDto(persist));
     }
 
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<TermDTO> update(@PathVariable Long id, @RequestBody TermDTO dto) {
-        Term foundedTerm = termService.findById(id);
-        foundedTerm.setStartDate(dto.getStartDate());
-        foundedTerm.setEndDate(dto.getEndDate());
-        Term term = termService.persist(foundedTerm);
-        return ResponseEntity.ok(termMapper.toDto(term));
+    public ResponseEntity<TermDTO> update(@PathVariable Long id,@Valid @RequestBody TermDTO dto) {
+        Term updated = termService.update(id, termMapper.toEntity(dto));
+        return ResponseEntity.ok(termMapper.toDto(updated));
     }
 
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")

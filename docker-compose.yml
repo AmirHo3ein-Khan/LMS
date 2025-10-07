@@ -3,8 +3,6 @@ version: "3.9"
 services:
   app:
     build: .
-    deploy:
-      replicas: 3
     ports:
       - "8443:8443"
     environment:
@@ -27,8 +25,24 @@ services:
     networks:
       - my-network
 
+  pgadmin:
+    image: dpage/pgadmin4:7
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - my-network
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
 volumes:
   postgres-data:
+  pgadmin-data:
+
 
 networks:
   my-network:

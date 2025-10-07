@@ -34,7 +34,7 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
     private final PersonRepository personRepository;
     private final ExamInstanceRepository examInstanceRepository;
     private final AccountRepository accountRepository;
-    private final GradingService  gradingService;
+    private final GradingService gradingService;
 
     protected ExamServiceImpl(JpaRepository<ExamTemplate, Long> repository, ExamRepository examRepository,
                               OfferedCourseRepository offeredCourseRepository, PersonRepository personRepository,
@@ -76,14 +76,6 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
 
         } else {
             examTemplate.setExamState(ExamState.FINISHED);
-        }
-    }
-
-    @Override
-    protected void preUpdate(ExamTemplate examTemplate) {
-        Instant examTemplateStartDate = examTemplate.getExamStartTime();
-        if (!examTemplateStartDate.isAfter(Instant.now())) {
-            throw new IllegalArgumentException(ILLEGAL_AFTER_START);
         }
     }
 
@@ -157,7 +149,7 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
         studentExam.setStatus(ExamInstanceStatus.COMPLETED);
         studentExam.setEndAt(Instant.now());
 
-        gradingService.autoTestGrading(examId , account.getPerson().getId());
+        gradingService.autoTestGrading(examId, account.getPerson().getId());
 
         examInstanceRepository.save(studentExam);
     }
@@ -182,5 +174,23 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
             }
         }
         return result;
+    }
+
+    @Override
+    public ExamTemplate update(Long aLong, ExamTemplate examTemplate) {
+        ExamTemplate foundedExam = examRepository.findById(aLong)
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Exam")));
+
+        Instant examTemplateStartDate = foundedExam.getExamStartTime();
+        if (!examTemplateStartDate.isAfter(Instant.now())) {
+            throw new IllegalArgumentException(ILLEGAL_AFTER_START);
+        }
+
+        foundedExam.setTitle(examTemplate.getTitle());
+        foundedExam.setDescription(examTemplate.getDescription());
+        foundedExam.setExamState(examTemplate.getExamState());
+        foundedExam.setExamStartTime(examTemplateStartDate);
+        foundedExam.setExamEndTime(examTemplateStartDate);
+        return examRepository.save(foundedExam);
     }
 }

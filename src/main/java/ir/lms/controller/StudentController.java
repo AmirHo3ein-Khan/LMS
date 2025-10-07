@@ -12,6 +12,7 @@ import ir.lms.service.AnswerService;
 import ir.lms.service.ExamService;
 import ir.lms.service.StudentService;
 import ir.lms.dto.ApiResponseDTO;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -59,7 +60,7 @@ public class StudentController {
 
     @PreAuthorize("hasRole('STUDENT')")
     @PostMapping("/save/answer")
-    public ResponseEntity<ApiResponseDTO> submitAnswer(@RequestBody AnswerDTO answerDTO , Principal principal) {
+    public ResponseEntity<ApiResponseDTO> submitAnswer(@Valid  @RequestBody AnswerDTO answerDTO , Principal principal) {
         Answer answer = answerMapper.toEntity(answerDTO , principal);
         Option option = new Option();
         if (answerDTO.getOptionId() != null) {

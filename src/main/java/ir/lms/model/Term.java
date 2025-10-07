@@ -29,7 +29,6 @@ public class Term extends BaseEntity<Long> {
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
-    @NotNull(message = "Semester cannot be null.")
     private Semester semester;
 
     private boolean deleted;

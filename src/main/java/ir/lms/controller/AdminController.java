@@ -6,6 +6,7 @@ import ir.lms.service.AuthService;
 import ir.lms.dto.ApiResponseDTO;
 import ir.lms.dto.auth.AddRoleRequest;
 import ir.lms.mapper.RegisterMapper;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,7 +27,7 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     @PostMapping("/teacher/register")
-    public ResponseEntity<ApiResponseDTO> teacherRegister(@RequestBody RegisterDTO request) {
+    public ResponseEntity<ApiResponseDTO> teacherRegister(@Valid  @RequestBody RegisterDTO request) {
         Person person = authService.persist(registerMapper.toEntity(request));
         authService.addRoleToPerson("teacher" , person.getId());
         ApiResponseDTO responseDTO = new ApiResponseDTO("Register success" , true);
@@ -35,7 +36,7 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/manager/register")
-    public ResponseEntity<ApiResponseDTO> managerRegister(@RequestBody RegisterDTO request) {
+    public ResponseEntity<ApiResponseDTO> managerRegister(@Valid @RequestBody RegisterDTO request) {
         Person person = authService.persist(registerMapper.toEntity(request));
         authService.addRoleToPerson("manager" , person.getId());
         ApiResponseDTO responseDTO = new ApiResponseDTO("Register success" , true);
@@ -44,7 +45,7 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/add/role")
-    public ResponseEntity<ApiResponseDTO> addRoleToPerson(@RequestBody AddRoleRequest request) {
+    public ResponseEntity<ApiResponseDTO> addRoleToPerson(@Valid @RequestBody AddRoleRequest request) {
         authService.addRoleToPerson(request.getRole() , request.getPersonId());
         return ResponseEntity.ok(new ApiResponseDTO("Add role success", true));
     }

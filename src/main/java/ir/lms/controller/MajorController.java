@@ -5,6 +5,7 @@ import ir.lms.dto.major.MajorDTO;
 import ir.lms.mapper.MajorMapper;
 import ir.lms.model.Major;
 import ir.lms.service.MajorService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,18 +28,16 @@ public class MajorController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<MajorDTO> save(@RequestBody MajorDTO dto) {
+    public ResponseEntity<MajorDTO> save(@Valid @RequestBody MajorDTO dto) {
         Major major = majorService.persist(majorMapper.toEntity(dto));
         return ResponseEntity.status(HttpStatus.CREATED).body(majorMapper.toDto(major));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{majorId}")
-    public ResponseEntity<MajorDTO> update(@PathVariable Long majorId, @RequestBody MajorDTO dto) {
-        Major foundedMajor = majorService.findById(majorId);
-        foundedMajor.setMajorName(dto.getMajorName());
-        Major major = majorService.persist(foundedMajor);
-        return ResponseEntity.ok(majorMapper.toDto(major));
+    public ResponseEntity<MajorDTO> update(@PathVariable Long majorId,@Valid @RequestBody MajorDTO dto) {
+        Major updated = majorService.update(majorId, majorMapper.toEntity(dto));
+        return ResponseEntity.ok(majorMapper.toDto(updated));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

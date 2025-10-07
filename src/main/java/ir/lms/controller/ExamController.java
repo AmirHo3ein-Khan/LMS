@@ -5,6 +5,7 @@ import ir.lms.service.ExamService;
 import ir.lms.dto.ApiResponseDTO;
 import ir.lms.dto.exam.ExamDTO;
 import ir.lms.mapper.ExamMapper;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,21 +27,16 @@ public class ExamController {
 
     @PreAuthorize("hasRole('TEACHER')")
     @PostMapping
-    public ResponseEntity<ExamDTO> save(@RequestBody ExamDTO dto) {
+    public ResponseEntity<ExamDTO> save(@Valid @RequestBody ExamDTO dto) {
         ExamTemplate exam = examService.persist(examMapper.toEntity(dto));
         return ResponseEntity.status(HttpStatus.CREATED).body(examMapper.toDto(exam));
     }
 
     @PreAuthorize("hasRole('TEACHER')")
     @PutMapping("/{id}")
-    public ResponseEntity<ExamDTO> update(@PathVariable Long id, @RequestBody ExamDTO dto) {
-        ExamTemplate foundedExam = examService.findById(id);
-        foundedExam.setTitle(dto.getTitle());
-        foundedExam.setExamStartTime(dto.getExamStartTime());
-        foundedExam.setExamEndTime(dto.getExamEndTime());
-        foundedExam.setDescription(dto.getDescription());
-        ExamTemplate exam = examService.persist(foundedExam);
-        return ResponseEntity.ok(examMapper.toDto(exam));
+    public ResponseEntity<ExamDTO> update(@PathVariable Long id,@Valid @RequestBody ExamDTO dto) {
+        ExamTemplate updated = examService.update(id, examMapper.toEntity(dto));
+        return ResponseEntity.ok(examMapper.toDto(updated));
     }
 
     @PreAuthorize("hasRole('TEACHER')")

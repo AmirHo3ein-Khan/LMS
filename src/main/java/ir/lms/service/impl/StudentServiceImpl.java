@@ -1,6 +1,7 @@
 package ir.lms.service.impl;
 
 import ir.lms.exception.AccessDeniedException;
+import ir.lms.exception.CourseHasNotLimit;
 import ir.lms.exception.EntityNotFoundException;
 import ir.lms.model.Account;
 import ir.lms.model.OfferedCourse;
@@ -39,10 +40,16 @@ public class StudentServiceImpl implements StudentService {
 
         OfferedCourse offeredCourse = offeredCourseRepository.findById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Course")));
+        Integer capacity = offeredCourse.getCapacity();
+        if (capacity <= 0) {
+            throw new CourseHasNotLimit("The course has no limit!");
+        }
 
         if (!(offeredCourse.getTerm().getMajor() == person.getMajor())) {
             throw new AccessDeniedException(NOT_ACCESS_TO_COURSE);
         }
+
+        offeredCourse.setCapacity(offeredCourse.getCapacity() - 1);
 
         offeredCourse.getStudent().add(person);
         offeredCourseRepository.save(offeredCourse);

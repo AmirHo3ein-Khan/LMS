@@ -133,6 +133,17 @@ public class AuthServiceImpl extends BaseServiceImpl<Person, Long> implements Au
 
 
     @Override
+    public Person update(Long aLong, Person person) {
+        Person foundedPerson = personRepository.findById(aLong)
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Person")));
+        foundedPerson.setFirstName(person.getFirstName());
+        foundedPerson.setLastName(person.getLastName());
+        foundedPerson.setNationalCode(person.getNationalCode());
+        foundedPerson.setPhoneNumber(person.getPhoneNumber());
+        return personRepository.save(foundedPerson);
+    }
+
+    @Override
     protected void prePersist(Person person) {
         Role role = roleRepository.findByName("USER")
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Role")));

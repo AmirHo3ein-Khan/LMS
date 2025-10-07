@@ -11,11 +11,13 @@ import ir.lms.model.ExamTemplate;
 import ir.lms.model.Option;
 import ir.lms.model.Question;
 import ir.lms.service.QuestionService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +36,7 @@ public class QuestionController {
 
     @PreAuthorize("hasRole('TEACHER')")
     @PostMapping
-    public ResponseEntity<QuestionDTO> create(@RequestBody QuestionDTO dto) {
+    public ResponseEntity<QuestionDTO> create(@Valid  @RequestBody QuestionDTO dto) {
         List<Option> options = new ArrayList<>();
         if (!(dto.getOptions() == null)) {
             for (OptionDTO optionDTO : dto.getOptions()) {
@@ -48,7 +50,7 @@ public class QuestionController {
 
     @PreAuthorize("hasRole('TEACHER')")
     @PostMapping("/assign/exam")
-    public ResponseEntity<ApiResponseDTO> assignQuestionToExam(@RequestBody ExamQuestionDTO dto) {
+    public ResponseEntity<ApiResponseDTO> assignQuestionToExam(@Valid @RequestBody ExamQuestionDTO dto) {
         questionService.assignQuestionToExam(dto.getExamId(), dto.getQuestionId(), dto.getScore());
         return ResponseEntity.ok(new ApiResponseDTO("Question added successfully.", true));
     }
@@ -59,6 +61,14 @@ public class QuestionController {
     public ResponseEntity<List<QuestionDTO>> findAllQuestionsOfAExam(@PathVariable Long examId) {
         List<QuestionDTO> questionDTOList = new ArrayList<>();
         for (Question question : questionService.findQuestionsByExamId(examId)) questionDTOList.add(questionMapper.toDto(question));
+        return ResponseEntity.ok(questionDTOList);
+    }
+
+    @PreAuthorize("hasRole('TEACHER')")
+    @GetMapping("/course/questions/{courseId}")
+    public ResponseEntity<List<QuestionDTO>> findAllQuestionsOfACourse(@PathVariable Long courseId , Principal principal) {
+        List<QuestionDTO> questionDTOList = new ArrayList<>();
+        for (Question question : questionService.findQuestionsOfCourse(courseId , principal)) questionDTOList.add(questionMapper.toDto(question));
         return ResponseEntity.ok(questionDTOList);
     }
 

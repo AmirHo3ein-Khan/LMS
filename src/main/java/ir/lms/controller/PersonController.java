@@ -4,6 +4,7 @@ import ir.lms.model.Role;
 import ir.lms.service.AuthService;
 import ir.lms.dto.ApiResponseDTO;
 import ir.lms.dto.auth.ChangeRoleRequestDTO;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class PersonController {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or hasRole('STUDENT') or hasRole('TEACHER') or hasRole('USER')")
     @PostMapping("/change/role")
-    public ResponseEntity<ApiResponseDTO> changeRole(@RequestBody ChangeRoleRequestDTO request ,  Principal principal) {
+    public ResponseEntity<ApiResponseDTO> changeRole(@Valid  @RequestBody ChangeRoleRequestDTO request , Principal principal) {
         authService.changeRole(principal.getName(), request.getRole());
         return ResponseEntity.ok(new ApiResponseDTO("Change role success", true));
     }

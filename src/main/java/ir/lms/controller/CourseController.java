@@ -5,6 +5,7 @@ import ir.lms.mapper.CourseMapper;
 import ir.lms.model.Course;
 import ir.lms.service.CourseService;
 import ir.lms.dto.course.CourseDTO;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,20 +27,16 @@ public class CourseController {
 
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<CourseDTO> save(@RequestBody CourseDTO dto) {
+    public ResponseEntity<CourseDTO> save(@Valid @RequestBody CourseDTO dto) {
         Course course = courseService.persist(courseMapper.toEntity(dto));
         return ResponseEntity.status(HttpStatus.CREATED).body(courseMapper.toDto(course));
     }
 
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<CourseDTO> update(@PathVariable Long id, @RequestBody CourseDTO dto) {
-        Course foundedCourse = courseService.findById(id);
-        foundedCourse.setTitle(dto.getTitle());
-        foundedCourse.setDescription(dto.getDescription());
-        foundedCourse.setUnit(dto.getUnit());
-        Course course = courseService.persist(foundedCourse);
-        return ResponseEntity.ok(courseMapper.toDto(course));
+    public ResponseEntity<CourseDTO> update(@PathVariable Long id,@Valid @RequestBody CourseDTO dto) {
+        Course updated = courseService.update(id, courseMapper.toEntity(dto));
+        return ResponseEntity.ok(courseMapper.toDto(updated));
     }
 
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
@@ -65,7 +62,7 @@ public class CourseController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/major/courses")
-    public ResponseEntity<List<CourseDTO>> findAllMajorCourses(@RequestBody String majorName) {
+    public ResponseEntity<List<CourseDTO>> findAllMajorCourses(@Valid @RequestBody String majorName) {
         List<CourseDTO> courseDTOS = new ArrayList<>();
         for (Course course : courseService.findAllMajorCourses(majorName)) courseDTOS.add(courseMapper.toDto(course));
         return ResponseEntity.ok(courseDTOS);

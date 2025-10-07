@@ -78,4 +78,15 @@ public class CourseServiceImpl extends BaseServiceImpl<Course, Long> implements 
         }
         return result;
     }
+
+    @Override
+    public Course update(Long aLong, Course course) {
+        Course foundedCourse = courseRepository.findById(aLong)
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Course")));
+        foundedCourse.setTitle(course.getTitle());
+        foundedCourse.setMajor(course.getMajor());
+        foundedCourse.setUnit(course.getUnit());
+        foundedCourse.setDescription(course.getDescription());
+        return courseRepository.save(foundedCourse);
+    }
 }

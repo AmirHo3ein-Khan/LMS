@@ -54,14 +54,6 @@ public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements Term
     }
 
     @Override
-    protected void preUpdate(Term term) {
-        LocalDate now = LocalDate.now();
-        if (!term.getStartDate().isAfter(now)) {
-            throw new AccessDeniedException(String.format(ILLEGAL_AFTER_START, "update"));
-        }
-    }
-
-    @Override
     public void delete(Long aLong) {
         Term term = termRepository.findById(aLong)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "term")));
@@ -93,4 +85,24 @@ public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements Term
         }
         return result;
     }
+
+    @Override
+    public Term update(Long aLong, Term term) {
+        Term foundedTerm = termRepository.findById(aLong)
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "term")));
+        LocalDate now = LocalDate.now();
+        if (!foundedTerm.getStartDate().isAfter(now)) {
+            throw new AccessDeniedException(String.format(ILLEGAL_AFTER_START, "update"));
+        }
+        foundedTerm.setStartDate(term.getStartDate());
+        foundedTerm.setEndDate(term.getEndDate());
+        foundedTerm.setSemester(term.getSemester());
+        return termRepository.save(foundedTerm);
+    }
+
+
+//    @Override
+//    protected void preUpdate(Term term) {
+//
+//    }
 }
