@@ -6,7 +6,6 @@ import ir.lms.repository.OptionRepository;
 import ir.lms.repository.PersonRepository;
 import ir.lms.service.AnswerService;
 import ir.lms.service.base.BaseServiceImpl;
-import ir.lms.util.AnswerCacheService;
 import ir.lms.util.AnswerFactory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;

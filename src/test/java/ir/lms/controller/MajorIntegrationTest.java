@@ -1,9 +1,9 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
-import ir.lms.dto.major.MajorDTO;
+import ir.lms.util.dto.AuthRequestDTO;
+import ir.lms.util.dto.AuthenticationResponse;
+import ir.lms.util.dto.MajorDTO;
 import ir.lms.model.Account;
 import ir.lms.model.Major;
 import ir.lms.model.Person;
@@ -21,10 +21,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.annotation.Commit;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -112,7 +110,7 @@ class MajorIntegrationTest {
                         .content(objectMapper.writeValueAsString(request))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.majorName").value(request.getMajorName()));
+                .andExpect(jsonPath("$.data.majorName").value(request.getMajorName()));
     }
 
     @Test
@@ -130,7 +128,7 @@ class MajorIntegrationTest {
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.majorName").value(updateRequest.getMajorName()));
+                .andExpect(jsonPath("$.data.majorName").value(updateRequest.getMajorName()));
     }
 
     @Test
@@ -153,7 +151,7 @@ class MajorIntegrationTest {
         mockMvc.perform(get("/api/major/{id}", saved.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.majorName").value(saved.getMajorName()));
+                .andExpect(jsonPath("$.data.majorName").value(saved.getMajorName()));
     }
 
     @Test
@@ -171,7 +169,7 @@ class MajorIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].majorName", containsInAnyOrder(
+                .andExpect(jsonPath("$.data.[*].majorName", containsInAnyOrder(
                         "Computer",
                         m1.getMajorName(),
                         m2.getMajorName()

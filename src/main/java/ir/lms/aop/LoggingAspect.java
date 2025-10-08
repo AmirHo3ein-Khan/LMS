@@ -3,7 +3,7 @@ package ir.lms.aop;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import ir.lms.mapper.base.BaseMapper;
+import ir.lms.util.dto.mapper.base.BaseMapper;
 import ir.lms.model.log.OperationLog;
 import ir.lms.repository.OperationLogRepository;
 import org.aspectj.lang.JoinPoint;
@@ -35,7 +35,8 @@ public class LoggingAspect {
     }
 
 
-    @Before("execution(* ir.lms.service.base.BaseServiceImpl.update*(..)) || execution(* ir.lms.service.base.BaseServiceImpl.delete*(..))")
+    @Before("execution(* ir.lms.service.base.BaseServiceImpl.update*(..)) || " +
+            "execution(* ir.lms.service.base.BaseServiceImpl.delete*(..))")
     public void captureOldData(JoinPoint joinPoint) {
         Object entity = joinPoint.getArgs()[0];
         try {
@@ -49,7 +50,9 @@ public class LoggingAspect {
         }
     }
 
-    @AfterReturning(pointcut = "execution(* ir.lms.service.base.BaseServiceImpl.*(..)) || " +
+    @AfterReturning(pointcut = "execution(* ir.lms.service.base.BaseServiceImpl.persist(..)) || " +
+            "execution(* ir.lms.service.base.BaseServiceImpl.update(..)) ||" +
+            "execution(* ir.lms.service.base.BaseServiceImpl.delete(..)) ||" +
             "execution(* ir.lms.service.impl.AuthServiceImpl.login(..)) ||" +
             " execution(* ir.lms.service.impl.QuestionServiceImpl.createQuestion(..))", returning = "result")
     public void logOperation(JoinPoint joinPoint, Object result) {

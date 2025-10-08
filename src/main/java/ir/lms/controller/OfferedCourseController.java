@@ -1,16 +1,11 @@
 package ir.lms.controller;
 
-import ir.lms.model.Major;
+import io.swagger.v3.oas.annotations.Operation;
 import ir.lms.model.OfferedCourse;
-import ir.lms.model.enums.CourseStatus;
 import ir.lms.service.OfferedCourseService;
-import ir.lms.dto.ApiResponseDTO;
-import ir.lms.dto.offeredCourse.OfferedCourseDTO;
-import ir.lms.dto.offeredCourse.ResponseOfferedCourseDTO;
-import ir.lms.mapper.OfferedCourseMapper;
-import ir.lms.mapper.ResponseOfferedCourseMapper;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
+import ir.lms.util.dto.*;
+import ir.lms.util.dto.mapper.OfferedCourseMapper;
+import ir.lms.util.dto.mapper.ResponseOfferedCourseMapper;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +13,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -26,81 +20,128 @@ import java.util.List;
 public class OfferedCourseController {
 
     private final OfferedCourseService offeredCourseService;
-    private final OfferedCourseMapper mapper;
     private final ResponseOfferedCourseMapper respMapper;
+    private final OfferedCourseMapper mapper;
 
-    public OfferedCourseController(OfferedCourseService offeredCourseService, OfferedCourseMapper mapper, ResponseOfferedCourseMapper respMapper) {
+    public OfferedCourseController(OfferedCourseService offeredCourseService,
+                                   OfferedCourseMapper mapper, ResponseOfferedCourseMapper respMapper) {
         this.offeredCourseService = offeredCourseService;
-        this.mapper = mapper;
         this.respMapper = respMapper;
+        this.mapper = mapper;
     }
 
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    private static final String STUDENT = "hasRole('STUDENT')";
+    private static final String TEACHER = "hasRole('STUDENT')";
+    private static final String ADMIN_OR_MANAGER = "hasAnyRole('ADMIN','MANAGER')";
+    private static final String ALL_AUTHENTICATED = "hasAnyRole('ADMIN','MANAGER','STUDENT')";
+
+    @PreAuthorize(ADMIN_OR_MANAGER)
     @PostMapping
-    public ResponseEntity<ResponseOfferedCourseDTO> create(@Valid  @RequestBody OfferedCourseDTO dto) {
+    public ResponseEntity<ApiResponse<ResponseOfferedCourseDTO>> create(@Valid  @RequestBody OfferedCourseDTO dto) {
         OfferedCourse offeredCourse = offeredCourseService.persist(mapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.CREATED).body(respMapper.toDto(offeredCourse));
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiResponse.<ResponseOfferedCourseDTO>builder()
+                        .success(true)
+                        .message("offered.course.creation.success")
+                        .data(respMapper.toDto(offeredCourse))
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize(ADMIN_OR_MANAGER)
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseOfferedCourseDTO> update(@PathVariable Long id,@Valid @RequestBody OfferedCourseDTO dto) {
+    public ResponseEntity<ApiResponse<ResponseOfferedCourseDTO>> update(@PathVariable Long id,@Valid @RequestBody OfferedCourseDTO dto) {
         OfferedCourse updated = offeredCourseService.update(id, mapper.toEntity(dto));
-        return ResponseEntity.ok(respMapper.toDto(updated));
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<ResponseOfferedCourseDTO>builder()
+                        .success(true)
+                        .message("offered.course.update.success")
+                        .data(respMapper.toDto(updated))
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize(ADMIN_OR_MANAGER)
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
         offeredCourseService.delete(id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Course deleted success." , true));
     }
 
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize(ADMIN_OR_MANAGER)
     @GetMapping("/{id}")
-    public ResponseEntity<ResponseOfferedCourseDTO> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(respMapper.toDto(offeredCourseService.findById(id)));
+    public ResponseEntity<ApiResponse<ResponseOfferedCourseDTO>> findById(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<ResponseOfferedCourseDTO>builder()
+                        .success(true)
+                        .message("offered.course.get.success")
+                        .data(respMapper.toDto(offeredCourseService.findById(id)))
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize(ADMIN_OR_MANAGER)
     @GetMapping
-    public ResponseEntity<List<ResponseOfferedCourseDTO>> findAll() {
-        List<ResponseOfferedCourseDTO> courseDTOS = new ArrayList<>();
-        for (OfferedCourse course : offeredCourseService.findAll()) courseDTOS.add(respMapper.toDto(course));
-        return ResponseEntity.ok(courseDTOS);
+    public ResponseEntity<ApiResponse<List<ResponseOfferedCourseDTO>>> findAll() {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<List<ResponseOfferedCourseDTO>>builder()
+                        .success(true)
+                        .message("offered.courses.get.success")
+                        .data(offeredCourseService.findAll().stream()
+                                .map(respMapper::toDto)
+                                .toList())
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
 
-    @PreAuthorize("hasRole('TEACHER')")
-    @GetMapping("/teacher/courses")
-    public ResponseEntity<List<ResponseOfferedCourseDTO>> findAllTeacherCourses(Principal principal) {
-        List<ResponseOfferedCourseDTO> courseDTOS = new ArrayList<>();
-        for (OfferedCourse course : offeredCourseService.findAllTeacherCourse(principal)) courseDTOS.add(respMapper.toDto(course));
-        return ResponseEntity.ok(courseDTOS);
+    @PreAuthorize(TEACHER)
+    @GetMapping("/teacher-courses")
+    public ResponseEntity<ApiResponse<List<ResponseOfferedCourseDTO>>> findAllTeacherCourses(Principal principal) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<List<ResponseOfferedCourseDTO>>builder()
+                        .success(true)
+                        .message("offered.courses.get.success")
+                        .data(offeredCourseService.findAllTeacherCourse(principal).stream()
+                                .map(respMapper::toDto)
+                                .toList())
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('STUDENT')")
-    @GetMapping("/student/courses")
-    public ResponseEntity<List<ResponseOfferedCourseDTO>> findAllStudentCourses(Principal principal) {
-        List<OfferedCourse> studentCourses = offeredCourseService.findAllStudentCourses(principal);
-        List<ResponseOfferedCourseDTO> courses = new ArrayList<>();
-        for (OfferedCourse course : studentCourses) {
-            ResponseOfferedCourseDTO dto = respMapper.toDto(course);
-            courses.add(dto);
-        }
-        return ResponseEntity.ok(courses);
+    @PreAuthorize(STUDENT)
+    @GetMapping("/student-courses")
+    public ResponseEntity<ApiResponse<List<ResponseOfferedCourseDTO>>> findAllStudentCourses(Principal principal) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<List<ResponseOfferedCourseDTO>>builder()
+                        .success(true)
+                        .message("offered.courses.get.success")
+                        .data(offeredCourseService.findAllStudentCourses(principal).stream()
+                                .map(respMapper::toDto)
+                                .toList())
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('STUDENT') or hasRole('ADMIN') or hasRole('MANAGER')")
-    @GetMapping("/term/courses/{termId}")
-    public ResponseEntity<List<ResponseOfferedCourseDTO>> findAllTermCourses(@PathVariable Long termId, Principal principal) {
-        List<OfferedCourse> termCourses = offeredCourseService.findAllTermCourses(termId , principal);
-        List<ResponseOfferedCourseDTO> courses = new ArrayList<>();
-        for (OfferedCourse course : termCourses) {
-            ResponseOfferedCourseDTO dto = respMapper.toDto(course);
-            courses.add(dto);
-        }
-        return ResponseEntity.ok(courses);
+    @PreAuthorize(ALL_AUTHENTICATED)
+    @GetMapping("/term-courses/{termId}")
+    public ResponseEntity<ApiResponse<List<ResponseOfferedCourseDTO>>> findAllTermCourses(@PathVariable Long termId, Principal principal) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<List<ResponseOfferedCourseDTO>>builder()
+                        .success(true)
+                        .message("courses.get.success")
+                        .data(offeredCourseService.findAllTermCourses(termId , principal).stream()
+                                .map(respMapper::toDto)
+                                .toList())
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
 }

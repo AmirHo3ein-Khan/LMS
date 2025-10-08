@@ -1,15 +1,14 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
-import ir.lms.dto.option.OptionDTO;
-import ir.lms.dto.question.ExamQuestionDTO;
-import ir.lms.dto.question.QuestionDTO;
+import ir.lms.util.dto.AuthRequestDTO;
+import ir.lms.util.dto.AuthenticationResponse;
+import ir.lms.util.dto.OptionDTO;
+import ir.lms.util.dto.ExamQuestionDTO;
+import ir.lms.util.dto.QuestionDTO;
 import ir.lms.model.*;
 import ir.lms.model.enums.*;
 import ir.lms.repository.*;
-import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -59,6 +58,80 @@ class QuestionIntegrationTest {
         this.accessToken = createAndLoginTeacher();
     }
 
+    @Test
+    void createQuestion() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course13", major);
+
+        QuestionDTO questionDTO = QuestionDTO.builder()
+                .questionType("test")
+                .questionText("question text")
+                .title("title")
+                .courseName(course.getTitle())
+                .majorName(major.getMajorName())
+                .defaultScore(2d)
+                .options(List.of(
+                        OptionDTO.builder().optionText("option1").correct(false).build(),
+                        OptionDTO.builder().optionText("option2").correct(true).build(),
+                        OptionDTO.builder().optionText("option3").correct(false).build(),
+                        OptionDTO.builder().optionText("option4").correct(false).build()
+                ))
+                .build();
+
+        mockMvc.perform(post("/api/question")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(questionDTO))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void assignQuestionToExam() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course14", major);
+        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        OfferedCourse offeredCourse = createOfferedCourse(term, course);
+        ExamTemplate exam = createExam(offeredCourse);
+        TestQuestion question = createTestQuestion(course);
+
+        ExamQuestionDTO dto = ExamQuestionDTO.builder()
+                .examId(exam.getId())
+                .questionId(question.getId())
+                .score(2)
+                .build();
+
+        mockMvc.perform(post("/api/question/assign-exam")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void findAllQuestionsOfExam() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course15", major);
+        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        OfferedCourse offeredCourse = createOfferedCourse(term, course);
+        ExamTemplate exam = createExam(offeredCourse);
+
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
+
+        mockMvc.perform(get("/api/question/exam-questions/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+    }
+
+
+    // ---------------- Helper Methods ----------------
+
+
+
     private String createAndLoginTeacher() throws Exception {
         Role teacherRole = roleRepository.findByName("TEACHER").get();
         Person teacher = createPerson("Teacher", "Teacher", List.of(teacherRole));
@@ -106,80 +179,6 @@ class QuestionIntegrationTest {
 
         return objectMapper.readValue(response, AuthenticationResponse.class).getAccessToken();
     }
-
-
-    @Test
-    void createQuestion() throws Exception {
-        Major major = getMajor("Computer");
-        Course course = createCourse("course13", major);
-
-        QuestionDTO questionDTO = QuestionDTO.builder()
-                .questionType("test")
-                .questionText("question text")
-                .title("title")
-                .courseName(course.getTitle())
-                .majorName(major.getMajorName())
-                .defaultScore(2d)
-                .options(List.of(
-                        OptionDTO.builder().optionText("option1").correct(false).build(),
-                        OptionDTO.builder().optionText("option2").correct(true).build(),
-                        OptionDTO.builder().optionText("option3").correct(false).build(),
-                        OptionDTO.builder().optionText("option4").correct(false).build()
-                ))
-                .build();
-
-        mockMvc.perform(post("/api/question")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(questionDTO))
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isCreated());
-    }
-
-    @Test
-    void assignQuestionToExam() throws Exception {
-        Major major = getMajor("Computer");
-        Course course = createCourse("course14", major);
-        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
-        OfferedCourse offeredCourse = createOfferedCourse(term, course);
-        ExamTemplate exam = createExam(offeredCourse);
-        TestQuestion question = createTestQuestion(course);
-
-        ExamQuestionDTO dto = ExamQuestionDTO.builder()
-                .examId(exam.getId())
-                .questionId(question.getId())
-                .score(2)
-                .build();
-
-        mockMvc.perform(post("/api/question/assign/exam")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto))
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void findAllQuestionsOfExam() throws Exception {
-        Major major = getMajor("Computer");
-        Course course = createCourse("course15", major);
-        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
-        OfferedCourse offeredCourse = createOfferedCourse(term, course);
-        ExamTemplate exam = createExam(offeredCourse);
-
-        TestQuestion q1 = createTestQuestion(course);
-        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
-
-        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
-        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
-
-        mockMvc.perform(get("/api/question/exam/questions/" + exam.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
-
-
-    // ---------------- Helper Methods ----------------
-
 
     private Major getMajor(String name) {
         return majorRepository.findByMajorName(name).get();

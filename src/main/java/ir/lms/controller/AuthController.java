@@ -1,19 +1,14 @@
 package ir.lms.controller;
 
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthResponseDTO;
-import ir.lms.dto.auth.PersonDTO;
+import ir.lms.util.dto.*;
 import ir.lms.model.Person;
-import ir.lms.dto.ApiResponseDTO;
 import ir.lms.service.AuthService;
-import ir.lms.mapper.PersonMapper;
+import ir.lms.util.dto.mapper.PersonMapper;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import java.time.Instant;
 
 @RestController
 @RequestMapping("/auth")
@@ -26,18 +21,41 @@ public class AuthController {
         this.personMapper = personMapper;
     }
 
-    @PostMapping("/student/register")
-    public ResponseEntity<ApiResponseDTO> studentRegister(@Valid @RequestBody PersonDTO request) {
+    @PostMapping("/student-register")
+    public ResponseEntity<ApiResponse<PersonDTO>> studentRegister(@Valid @RequestBody PersonDTO request) {
         Person person = authService.persist(personMapper.toEntity(request));
         authService.addRoleToPerson("student" , person.getId());
-        ApiResponseDTO responseDTO = new ApiResponseDTO("Register success" , true);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiResponse.<PersonDTO>builder()
+                        .success(true)
+                        .message("Register.success")
+                        .data(personMapper.toDto(person))
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@Valid  @RequestBody AuthRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.OK).body(authService.login(request));
+        AuthResponseDTO login = authService.login(request);
+        return ResponseEntity.status(HttpStatus.OK).body(login);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout(@RequestHeader(value = "Authorization", required = false) String authorizeRequest) {
+        String token = null;
+        if (authorizeRequest != null && authorizeRequest.startsWith("Bearer ")) {
+            token = authorizeRequest.substring(7);
+        }
+        authService.logOut(token);
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<String>builder()
+                        .success(true)
+                        .timestamp(Instant.now().toString())
+                        .message("user.logout.success")
+                        .build()
+        );
     }
 
 

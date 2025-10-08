@@ -1,9 +1,9 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
-import ir.lms.dto.offeredCourse.OfferedCourseDTO;
+import ir.lms.util.dto.AuthRequestDTO;
+import ir.lms.util.dto.AuthenticationResponse;
+import ir.lms.util.dto.OfferedCourseDTO;
 import ir.lms.model.*;
 import ir.lms.model.enums.CourseStatus;
 import ir.lms.model.enums.RegisterState;

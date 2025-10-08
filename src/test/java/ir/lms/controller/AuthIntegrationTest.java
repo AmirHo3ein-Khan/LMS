@@ -1,8 +1,8 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.PersonDTO;
+import ir.lms.util.dto.AuthRequestDTO;
+import ir.lms.util.dto.PersonDTO;
 import ir.lms.model.Account;
 import ir.lms.model.Person;
 import ir.lms.model.Role;
@@ -11,9 +11,7 @@ import ir.lms.repository.AccountRepository;
 import ir.lms.repository.PersonRepository;
 import ir.lms.repository.RoleRepository;
 import jakarta.transaction.Transactional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -63,7 +61,7 @@ class AuthIntegrationTest {
                 .majorName("Computer")
                 .build();
 
-        mockMvc.perform(post("/auth/student/register")
+        mockMvc.perform(post("/auth/student-register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated());

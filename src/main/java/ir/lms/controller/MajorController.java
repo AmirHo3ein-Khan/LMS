@@ -1,8 +1,8 @@
 package ir.lms.controller;
 
-import ir.lms.dto.ApiResponseDTO;
-import ir.lms.dto.major.MajorDTO;
-import ir.lms.mapper.MajorMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import ir.lms.util.dto.*;
+import ir.lms.util.dto.mapper.MajorMapper;
 import ir.lms.model.Major;
 import ir.lms.service.MajorService;
 import jakarta.validation.Valid;
@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,21 +27,37 @@ public class MajorController {
         this.majorMapper = majorMapper;
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    private static final String ADMIN = "hasRole('ADMIN')";
+
+    @PreAuthorize(ADMIN)
     @PostMapping
-    public ResponseEntity<MajorDTO> save(@Valid @RequestBody MajorDTO dto) {
+    public ResponseEntity<ApiResponse<MajorDTO>> save(@Valid @RequestBody MajorDTO dto) {
         Major major = majorService.persist(majorMapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.CREATED).body(majorMapper.toDto(major));
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiResponse.<MajorDTO>builder()
+                        .success(true)
+                        .message("major.creation.success")
+                        .data(majorMapper.toDto(major))
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(ADMIN)
     @PutMapping("/{majorId}")
-    public ResponseEntity<MajorDTO> update(@PathVariable Long majorId,@Valid @RequestBody MajorDTO dto) {
+    public ResponseEntity<ApiResponse<MajorDTO>> update(@PathVariable Long majorId,@Valid @RequestBody MajorDTO dto) {
         Major updated = majorService.update(majorId, majorMapper.toEntity(dto));
-        return ResponseEntity.ok(majorMapper.toDto(updated));
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<MajorDTO>builder()
+                        .success(true)
+                        .message("major.update.success")
+                        .data(majorMapper.toDto(updated))
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(ADMIN)
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
         majorService.delete(id);
@@ -48,19 +65,31 @@ public class MajorController {
                 .body(new ApiResponseDTO("Major deleted success.", true));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(ADMIN)
     @GetMapping("/{id}")
-    public ResponseEntity<MajorDTO> findById(@PathVariable Long id) {
-        return ResponseEntity.status(HttpStatus.OK).body(majorMapper.toDto(majorService.findById(id)));
+    public ResponseEntity<ApiResponse<MajorDTO>> findById(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<MajorDTO>builder()
+                        .success(true)
+                        .message("major.get.success")
+                        .data(majorMapper.toDto(majorService.findById(id)))
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(ADMIN)
     @GetMapping
-    public ResponseEntity<List<MajorDTO>> findAll() {
-        List<MajorDTO> majors = new ArrayList<>();
-        for (Major m : majorService.findAll()) {
-            majors.add(majorMapper.toDto(m));
-        }
-        return ResponseEntity.status(HttpStatus.OK).body(majors);
+    public ResponseEntity<ApiResponse<List<MajorDTO>>> findAll() {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<List<MajorDTO>>builder()
+                        .success(true)
+                        .message("majors.get.success")
+                        .data(majorService.findAll().stream()
+                                .map(majorMapper::toDto)
+                                .toList())
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 }

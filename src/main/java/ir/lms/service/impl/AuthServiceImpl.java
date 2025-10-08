@@ -1,7 +1,9 @@
 package ir.lms.service.impl;
 
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthResponseDTO;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import ir.lms.util.dto.AuthRequestDTO;
+import ir.lms.util.dto.AuthResponseDTO;
 import ir.lms.exception.AccessDeniedException;
 import ir.lms.exception.DuplicateException;
 import ir.lms.exception.EntityNotFoundException;
@@ -11,6 +13,8 @@ import ir.lms.repository.*;
 import ir.lms.service.AuthService;
 import ir.lms.config.JwtService;
 import ir.lms.service.base.BaseServiceImpl;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -40,7 +44,7 @@ public class AuthServiceImpl extends BaseServiceImpl<Person, Long> implements Au
     protected AuthServiceImpl(JpaRepository<Person, Long> repository, AuthenticationManager authenticationManager,
                               AccountRepository accountRepository, RoleRepository roleRepository,
                               JwtService jwtService, PasswordEncoder passwordEncoder,
-                              PersonRepository personRepository) {
+                              PersonRepository personRepository, MessageSource messageSource) {
         super(repository);
         this.authenticationManager = authenticationManager;
         this.accountRepository = accountRepository;
@@ -80,6 +84,18 @@ public class AuthServiceImpl extends BaseServiceImpl<Person, Long> implements Au
         }
 
         throw new AccessDeniedException("You don't have access. Your Account not active!");
+    }
+
+
+    @Override
+    public void logOut(String token) {
+        String extractUUID = jwtService.extractUUID(token);
+
+        Account account = accountRepository.findByAuthId(UUID.fromString(extractUUID))
+                .orElseThrow(() -> new EntityNotFoundException("account.not.found"));
+
+        account.setAuthId(null);
+        accountRepository.save(account);
     }
 
     @Override

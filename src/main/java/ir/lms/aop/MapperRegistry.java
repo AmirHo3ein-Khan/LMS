@@ -1,6 +1,6 @@
 package ir.lms.aop;
 
-import ir.lms.mapper.base.BaseMapper;
+import ir.lms.util.dto.mapper.base.BaseMapper;
 import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;

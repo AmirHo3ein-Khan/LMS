@@ -1,10 +1,10 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.auth.AddRoleRequest;
-import ir.lms.dto.auth.RegisterDTO;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
+import ir.lms.util.dto.AddRoleRequest;
+import ir.lms.util.dto.PersonDTO;
+import ir.lms.util.dto.AuthRequestDTO;
+import ir.lms.util.dto.AuthenticationResponse;
 import ir.lms.model.Account;
 import ir.lms.model.Person;
 import ir.lms.model.Role;
@@ -22,7 +22,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -81,8 +80,8 @@ class AdminIntegrationTest {
 
     @Test
     void teacherRegister() throws Exception {
-        RegisterDTO dto = buildRegisterDTO();
-        mockMvc.perform(post("/api/admin/teacher/register")
+        PersonDTO dto = buildPersonDTO();
+        mockMvc.perform(post("/api/admin/teacher-register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
@@ -91,8 +90,8 @@ class AdminIntegrationTest {
 
     @Test
     void managerRegister() throws Exception {
-        RegisterDTO dto = buildRegisterDTO();
-        mockMvc.perform(post("/api/admin/manager/register")
+        PersonDTO dto = buildPersonDTO();
+        mockMvc.perform(post("/api/admin/manager-register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
@@ -114,7 +113,7 @@ class AdminIntegrationTest {
                 .personId(person.getId())
                 .build();
 
-        mockMvc.perform(post("/api/admin/add/role")
+        mockMvc.perform(post("/api/admin/add/person-role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .header("Authorization", "Bearer " + accessToken))
@@ -125,7 +124,7 @@ class AdminIntegrationTest {
     void activeAccount() throws Exception {
         Account account = createAccountWithState(RegisterState.PENDING);
 
-        mockMvc.perform(post("/api/admin/active/" + account.getId())
+        mockMvc.perform(post("/api/admin/active-role/" + account.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
 
@@ -137,7 +136,7 @@ class AdminIntegrationTest {
     void inactiveAccount() throws Exception {
         Account account = createAccountWithState(RegisterState.ACTIVE);
 
-        mockMvc.perform(post("/api/admin/inactive/" + account.getId())
+        mockMvc.perform(post("/api/admin/inactive-role/" + account.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
 
@@ -194,8 +193,8 @@ class AdminIntegrationTest {
         return account;
     }
 
-    private RegisterDTO buildRegisterDTO() {
-        return RegisterDTO.builder()
+    private PersonDTO buildPersonDTO() {
+        return PersonDTO.builder()
                 .firstName("Amir Hossein")
                 .lastName("Khanalipour")
                 .phoneNumber(randomPhone())

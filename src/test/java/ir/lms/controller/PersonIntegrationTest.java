@@ -1,9 +1,9 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
-import ir.lms.dto.auth.ChangeRoleRequestDTO;
+import ir.lms.util.dto.AuthRequestDTO;
+import ir.lms.util.dto.AuthenticationResponse;
+import ir.lms.util.dto.ChangeRoleRequestDTO;
 import ir.lms.model.Account;
 import ir.lms.model.Person;
 import ir.lms.model.Role;
@@ -55,7 +55,7 @@ class PersonIntegrationTest {
     void changeRoleTest() throws Exception {
         ChangeRoleRequestDTO dto = ChangeRoleRequestDTO.builder().role("ADMIN").build();
 
-        mockMvc.perform(post("/api/user/change/role")
+        mockMvc.perform(post("/api/user/change-role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
@@ -64,7 +64,7 @@ class PersonIntegrationTest {
 
     @Test
     void getRolesTest() throws Exception {
-        mockMvc.perform(get("/api/user/get/roles")
+        mockMvc.perform(get("/api/user/person-roles")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());

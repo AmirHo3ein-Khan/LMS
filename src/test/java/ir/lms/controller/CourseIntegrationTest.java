@@ -1,9 +1,9 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
-import ir.lms.dto.course.CourseDTO;
+import ir.lms.util.dto.AuthRequestDTO;
+import ir.lms.util.dto.AuthenticationResponse;
+import ir.lms.util.dto.CourseDTO;
 import ir.lms.model.*;
 import ir.lms.model.enums.RegisterState;
 import ir.lms.repository.*;
@@ -32,14 +32,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class CourseIntegrationTest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private RoleRepository roleRepository;
-    @Autowired private PersonRepository personRepository;
-    @Autowired private AccountRepository accountRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private CourseRepository courseRepository;
-    @Autowired private MajorRepository majorRepository;
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private PersonRepository personRepository;
+    @Autowired
+    private AccountRepository accountRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private CourseRepository courseRepository;
+    @Autowired
+    private MajorRepository majorRepository;
 
     private String accessToken;
 
@@ -47,16 +55,17 @@ class CourseIntegrationTest {
     void setupAdmin() throws Exception {
         Role adminRole = roleRepository.findByName("ADMIN").orElseThrow();
         Person admin = createPerson("Admin", "Admin", adminRole);
-        createAccount(admin, adminRole);
+        Account account = createAccount(admin, adminRole);
         this.accessToken = loginAndGetToken(admin.getPhoneNumber(), admin.getNationalCode());
     }
 
     @Test
     void saveCourse() throws Exception {
-        Major major = createMajor("Computer"+ UUID.randomUUID());
+        Major major = createMajor("Computer" + UUID.randomUUID());
 
         CourseDTO dto = CourseDTO.builder()
                 .title("course1")
+                .unit(2)
                 .description("Course Description")
                 .majorName(major.getMajorName())
                 .build();
@@ -66,7 +75,7 @@ class CourseIntegrationTest {
                         .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title").value(dto.getTitle()));
+                .andExpect(jsonPath("$.data.title").value(dto.getTitle()));
     }
 
     @Test
@@ -76,6 +85,7 @@ class CourseIntegrationTest {
 
         CourseDTO dto = CourseDTO.builder()
                 .title("New Title")
+                .unit(2)
                 .description("New Description")
                 .majorName(major.getMajorName())
                 .build();
@@ -85,7 +95,7 @@ class CourseIntegrationTest {
                         .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("New Title"));
+                .andExpect(jsonPath("$.data.title").value("New Title"));
     }
 
     @Test
@@ -108,7 +118,7 @@ class CourseIntegrationTest {
         mockMvc.perform(get("/api/course/" + course.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Find Me"));
+                .andExpect(jsonPath("$.data.title").value("Find Me"));
     }
 
     @Test
@@ -171,8 +181,10 @@ class CourseIntegrationTest {
     private Course createCourse(String title, String description, Major major) {
         return courseRepository.save(Course.builder()
                 .title(title)
+                .unit(2)
                 .description(description)
                 .major(major)
+                .deleted(false)
                 .build());
     }
 

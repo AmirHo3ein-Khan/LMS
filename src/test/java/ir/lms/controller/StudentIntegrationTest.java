@@ -1,13 +1,12 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.answer.AnswerDTO;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
+import ir.lms.util.dto.AnswerDTO;
+import ir.lms.util.dto.AuthRequestDTO;
+import ir.lms.util.dto.AuthenticationResponse;
 import ir.lms.model.*;
 import ir.lms.model.enums.*;
 import ir.lms.repository.*;
-import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -81,7 +80,7 @@ class StudentIntegrationTest {
 
     @Test
     void studentGetCourse() throws Exception {
-        mockMvc.perform(post("/api/student/take/course/" + offeredCourse.getId())
+        mockMvc.perform(post("/api/student/take-course/" + offeredCourse.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
@@ -96,7 +95,7 @@ class StudentIntegrationTest {
         examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
         examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
 
-        mockMvc.perform(post("/api/student/start/exam/" + exam.getId())
+        mockMvc.perform(post("/api/student/start-exam/" + exam.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
@@ -115,7 +114,7 @@ class StudentIntegrationTest {
         testAnswerRepository.save(TestAnswer.builder().examInstance(instance).examQuestion(eq1).option(q1.getOptions().get(0)).score(eq1.getQuestionScore()).build());
         descriptiveAnswerRepository.save(DescriptiveAnswer.builder().examInstance(instance).examQuestion(eq2).answerText("Answer Text").build());
 
-        mockMvc.perform(post("/api/student/submit/exam/" + exam.getId())
+        mockMvc.perform(post("/api/student/submit-exam/" + exam.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
@@ -136,7 +135,7 @@ class StudentIntegrationTest {
                 .type("test")
                 .build();
 
-        mockMvc.perform(post("/api/student/save/answer")
+        mockMvc.perform(post("/api/student/submit-answer")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(answerDTO))
                         .header("Authorization", "Bearer " + accessToken))

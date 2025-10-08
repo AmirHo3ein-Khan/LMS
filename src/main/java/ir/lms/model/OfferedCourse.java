@@ -31,8 +31,8 @@ public class OfferedCourse extends BaseEntity<Long> {
 
     private String classLocation;
 
-    @Enumerated(EnumType.STRING)
-    private CourseStatus courseStatus;
+
+    private int courseStatus;
 
     @ManyToOne
     @JoinColumn(name = "course_id")

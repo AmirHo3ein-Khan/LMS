@@ -1,8 +1,7 @@
 package ir.lms.aop;
 
-import ir.lms.mapper.*;
 import ir.lms.model.*;
-import org.aspectj.weaver.patterns.PerObject;
+import ir.lms.util.dto.mapper.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +18,6 @@ public class MapperConfig {
                         OfferedCourseMapper offeredCourseMapper,
                         OptionMapper optionMapper,
                         QuestionMapper questionMapper,
-                        RegisterMapper registerMapper,
                         ResponseOfferedCourseMapper responseOfferedCourseMapper,
                         TermMapper termMapper) {
         registry.register(Person.class, personMapper);
@@ -31,7 +29,6 @@ public class MapperConfig {
         registry.register(Question.class, questionMapper);
         registry.register(Term.class, termMapper);
         registry.register(OfferedCourse.class, responseOfferedCourseMapper);
-        registry.register(Person.class, registerMapper);
 
     }
 }

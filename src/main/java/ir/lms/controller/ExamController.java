@@ -1,16 +1,18 @@
 package ir.lms.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import ir.lms.model.ExamTemplate;
 import ir.lms.service.ExamService;
-import ir.lms.dto.ApiResponseDTO;
-import ir.lms.dto.exam.ExamDTO;
-import ir.lms.mapper.ExamMapper;
+import ir.lms.util.dto.ApiResponse;
+import ir.lms.util.dto.ApiResponseDTO;
+import ir.lms.util.dto.ExamDTO;
+import ir.lms.util.dto.mapper.ExamMapper;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import java.util.ArrayList;
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -25,47 +27,85 @@ public class ExamController {
         this.examMapper = examMapper;
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
+    private static final String TEACHER = "hasRole('TEACHER')";
+    private static final String TEACHER_OR_STUDENT = "hasRole('TEACHER') or hasRole('STUDENT')";
+
+    @PreAuthorize(TEACHER)
     @PostMapping
-    public ResponseEntity<ExamDTO> save(@Valid @RequestBody ExamDTO dto) {
+    public ResponseEntity<ApiResponse<ExamDTO>> save(@Valid @RequestBody ExamDTO dto) {
         ExamTemplate exam = examService.persist(examMapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.CREATED).body(examMapper.toDto(exam));
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiResponse.<ExamDTO>builder()
+                        .success(true)
+                        .message("exam.creation.success")
+                        .data(examMapper.toDto(exam))
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize(TEACHER)
     @PutMapping("/{id}")
-    public ResponseEntity<ExamDTO> update(@PathVariable Long id,@Valid @RequestBody ExamDTO dto) {
+    public ResponseEntity<ApiResponse<ExamDTO>> update(@PathVariable Long id,@Valid @RequestBody ExamDTO dto) {
         ExamTemplate updated = examService.update(id, examMapper.toEntity(dto));
-        return ResponseEntity.ok(examMapper.toDto(updated));
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<ExamDTO>builder()
+                        .success(true)
+                        .message("exam.update.success")
+                        .data(examMapper.toDto(updated))
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize(TEACHER)
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
         examService.delete(id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Exam deleted success." , true));
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize(TEACHER)
     @GetMapping("/{id}")
-    public ResponseEntity<ExamDTO> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(examMapper.toDto(examService.findById(id)));
+    public ResponseEntity<ApiResponse<ExamDTO>> findById(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<ExamDTO>builder()
+                        .success(true)
+                        .message("exam.get.success")
+                        .data(examMapper.toDto(examService.findById(id)))
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize(TEACHER)
     @GetMapping
-    public ResponseEntity<List<ExamDTO>> findAll() {
-        List<ExamDTO> examDTOS = new ArrayList<>();
-        for (ExamTemplate exam : examService.findAll()) examDTOS.add(examMapper.toDto(exam));
-        return ResponseEntity.ok(examDTOS);
+    public ResponseEntity<ApiResponse<List<ExamDTO>>> findAll() {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<List<ExamDTO>>builder()
+                        .success(true)
+                        .message("exams.get.success")
+                        .data(examService.findAll().stream()
+                                .map(examMapper::toDto)
+                                .toList())
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
-    @PreAuthorize("hasRole('TEACHER') or hasRole('STUDENT')")
-    @GetMapping("/course/exams/{courseId}")
-    public ResponseEntity<List<ExamDTO>> findAllExamsOfACourse(@PathVariable Long courseId) {
-        List<ExamDTO> examDTOS = new ArrayList<>();
-        for (ExamTemplate exam : examService.findAllExamOfACourse(courseId)) examDTOS.add(examMapper.toDto(exam));
-        return ResponseEntity.ok(examDTOS);
+    @PreAuthorize(TEACHER_OR_STUDENT)
+    @GetMapping("/course-exams/{courseId}")
+    public ResponseEntity<ApiResponse<List<ExamDTO>>> findAllExamsOfACourse(@PathVariable Long courseId) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<List<ExamDTO>>builder()
+                        .success(true)
+                        .message("exams.get.success")
+                        .data(examService.findAllExamOfACourse(courseId).stream()
+                                .map(examMapper::toDto)
+                                .toList())
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
 }

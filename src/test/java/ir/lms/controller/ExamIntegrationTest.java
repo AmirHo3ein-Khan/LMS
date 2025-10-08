@@ -1,9 +1,9 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.dto.auth.AuthRequestDTO;
-import ir.lms.dto.auth.AuthenticationResponse;
-import ir.lms.dto.exam.ExamDTO;
+import ir.lms.util.dto.AuthRequestDTO;
+import ir.lms.util.dto.AuthenticationResponse;
+import ir.lms.util.dto.ExamDTO;
 import ir.lms.model.*;
 import ir.lms.model.enums.*;
 import ir.lms.repository.*;
@@ -181,7 +181,7 @@ class ExamIntegrationTest {
         saveExam("Exam1", "Desc1");
         saveExam("Exam2", "Desc2");
 
-        mockMvc.perform(get("/api/exam/course/exams/" + offeredCourse.getId())
+        mockMvc.perform(get("/api/exam/course-exams/" + offeredCourse.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }

@@ -40,6 +40,7 @@ public class StudentServiceImpl implements StudentService {
 
         OfferedCourse offeredCourse = offeredCourseRepository.findById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Course")));
+
         Integer capacity = offeredCourse.getCapacity();
         if (capacity <= 0) {
             throw new CourseHasNotLimit("The course has no limit!");
