@@ -1,5 +1,6 @@
 package ir.lms.util.dto.mapper;
 
+import ir.lms.model.AcademicCalender;
 import ir.lms.model.Major;
 import ir.lms.model.Term;
 import ir.lms.repository.MajorRepository;
@@ -27,6 +28,13 @@ public abstract class TermMapper implements BaseMapper<Term, TermDTO> {
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Major with name " + dto.getMajorName() + " not found"
                     ));
+            AcademicCalender calender = AcademicCalender.builder()
+                    .classesEndDate(dto.getClassesEndDate())
+                    .classesStartDate(dto.getClassesStartDate())
+                    .courseRegistrationEnd(dto.getCourseRegistrationEnd())
+                    .courseRegistrationStart(dto.getCourseRegistrationStart())
+                    .build();
+            term.setAcademicCalender(calender);
             term.setMajor(major);
         }
     }
@@ -39,7 +47,12 @@ public abstract class TermMapper implements BaseMapper<Term, TermDTO> {
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Major with name " + dto.getMajorName() + " not found"
                     ));
-            dto.setMajorName(major.getMajorName());
+                AcademicCalender academicCalender = term.getAcademicCalender();
+                dto.setMajorName(major.getMajorName());
+                dto.setClassesEndDate(academicCalender.getClassesEndDate());
+                dto.setClassesStartDate(academicCalender.getClassesStartDate());
+                dto.setCourseRegistrationEnd(academicCalender.getCourseRegistrationEnd());
+                dto.setCourseRegistrationStart(academicCalender.getCourseRegistrationStart());
         }
     }
 }
