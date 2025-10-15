@@ -1,0 +1,21 @@
+package ir.lms.util.dto;
+
+import lombok.*;
+
+import java.time.LocalDate;
+
+@Builder
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class AcademicCalenderDTO {
+
+    private LocalDate courseRegistrationStart;
+
+    private LocalDate courseRegistrationEnd;
+
+    private LocalDate classesStartDate;
+
+    private LocalDate classesEndDate;
+}
