@@ -10,7 +10,9 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TermDTO {
-    private LocalDate startDate;
-    private LocalDate endDate;
     private String majorName;
+    private LocalDate courseRegistrationStart;
+    private LocalDate courseRegistrationEnd;
+    private LocalDate classesStartDate;
+    private LocalDate classesEndDate;
 }
