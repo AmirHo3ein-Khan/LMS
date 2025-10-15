@@ -1,7 +1,6 @@
 package ir.lms.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import ir.lms.util.dto.ApiResponse;
 import ir.lms.util.dto.ApiResponseDTO;
 import ir.lms.util.dto.mapper.CourseMapper;
@@ -98,7 +97,7 @@ public class CourseController {
 
     @PreAuthorize(ALL_AUTHENTICATED)
     @GetMapping("/major-courses")
-    public ResponseEntity<ApiResponse<List<CourseDTO>>> findAllMajorCourses(@Valid @RequestBody String majorName) {
+    public ResponseEntity<ApiResponse<List<CourseDTO>>> findAllMajorCourses(@Valid @RequestParam String majorName) {
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.<List<CourseDTO>>builder()
                         .success(true)
