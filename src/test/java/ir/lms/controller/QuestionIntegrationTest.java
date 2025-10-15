@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -89,7 +90,11 @@ class QuestionIntegrationTest {
     void assignQuestionToExam() throws Exception {
         Major major = getMajor("Computer");
         Course course = createCourse("course14", major);
-        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
         OfferedCourse offeredCourse = createOfferedCourse(term, course);
         ExamTemplate exam = createExam(offeredCourse);
         TestQuestion question = createTestQuestion(course);
@@ -111,7 +116,11 @@ class QuestionIntegrationTest {
     void findAllQuestionsOfExam() throws Exception {
         Major major = getMajor("Computer");
         Course course = createCourse("course15", major);
-        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
         OfferedCourse offeredCourse = createOfferedCourse(term, course);
         ExamTemplate exam = createExam(offeredCourse);
 
@@ -193,20 +202,27 @@ class QuestionIntegrationTest {
         return courseRepository.save(course);
     }
 
-    private Term createTerm(Major major, LocalDate start, LocalDate end, Semester semester) {
-        Term term = Term.builder()
-                .startDate(start)
-                .endDate(end)
-                .semester(semester)
-                .major(major)
-                .build();
+    private Term createTerm(Major major,AcademicCalender academicCalender , Semester semester) {
+        Term term = Term.builder().year(2025).academicCalender(academicCalender).semester(semester).major(major).build();
         return termRepository.save(term);
+    }
+
+    private AcademicCalender createCalender(LocalDate courseRegistrationStart,
+                                            LocalDate courseRegistrationEnd,
+                                            LocalDate classesStartDate,
+                                            LocalDate classesEndDate) {
+        return AcademicCalender.builder()
+                .courseRegistrationStart(courseRegistrationStart)
+                .courseRegistrationEnd(courseRegistrationEnd)
+                .classesStartDate(classesStartDate)
+                .classesEndDate(classesEndDate)
+                .build();
     }
 
     private OfferedCourse createOfferedCourse(Term term, Course course) {
         OfferedCourse oc = OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
+                .classStartTime(LocalTime.now())
+                .classEndTime(LocalTime.now().plusHours(1))
                 .term(term)
                 .course(course)
                 .courseStatus(CourseStatus.UNFILLED)
