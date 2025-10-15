@@ -11,7 +11,6 @@ import ir.lms.service.base.BaseServiceImpl;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -36,7 +35,7 @@ public class CourseServiceImpl extends BaseServiceImpl<Course, Long> implements 
         if (major.isDeleted()) {
             throw new EntityNotFoundException(String.format(NOT_FOUND, "Major"));
         }
-        if (courseRepository.existsByMajorAndTitle(course.getMajor().getId() , course.getTitle())) {
+        if (courseRepository.findByTitleAndMajor(course.getTitle() , course.getMajor()).isPresent()) {
             throw new DuplicateException(EXIST_COURSE);
         }
         course.setDeleted(false);
