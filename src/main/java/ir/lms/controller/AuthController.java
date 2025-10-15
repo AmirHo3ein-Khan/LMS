@@ -1,5 +1,6 @@
 package ir.lms.controller;
 
+import ir.lms.service.PersonService;
 import ir.lms.util.dto.*;
 import ir.lms.model.Person;
 import ir.lms.service.AuthService;
@@ -14,17 +15,19 @@ import java.time.Instant;
 @RequestMapping("/auth")
 public class AuthController {
     private final AuthService authService;
+    private final PersonService personService;
     private final PersonMapper personMapper;
 
-    public AuthController(AuthService authService, PersonMapper personMapper) {
+    public AuthController(AuthService authService, PersonService personService, PersonMapper personMapper) {
         this.authService = authService;
+        this.personService = personService;
         this.personMapper = personMapper;
     }
 
     @PostMapping("/student-register")
     public ResponseEntity<ApiResponse<PersonDTO>> studentRegister(@Valid @RequestBody PersonDTO request) {
-        Person person = authService.persist(personMapper.toEntity(request));
-        authService.addRoleToPerson("student" , person.getId());
+        Person person = personService.persist(personMapper.toEntity(request));
+        personService.addRoleToPerson("student" , person.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.<PersonDTO>builder()
                         .success(true)
