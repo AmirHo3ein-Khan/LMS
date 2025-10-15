@@ -1,9 +1,7 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.AuthRequestDTO;
-import ir.lms.util.dto.AuthenticationResponse;
-import ir.lms.util.dto.ExamDTO;
+import ir.lms.util.dto.*;
 import ir.lms.model.*;
 import ir.lms.model.enums.*;
 import ir.lms.repository.*;
@@ -18,10 +16,12 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -35,87 +35,50 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class ExamIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private RoleRepository roleRepository;
+    @Autowired private ExamRepository examRepository;
+    @Autowired private TermRepository termRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private MajorRepository majorRepository;
+    @Autowired private CourseRepository courseRepository;
+    @Autowired private PersonRepository personRepository;
+    @Autowired private AccountRepository accountRepository;
+    @Autowired private TestAnswerRepository testAnswerRepository;
+    @Autowired private ExamInstanceRepository examInstanceRepository;
+    @Autowired private ExamQuestionRepository examQuestionRepository;
+    @Autowired private TestQuestionRepository testQuestionRepository;
+    @Autowired private OfferedCourseRepository offeredCourseRepository;
+    @Autowired private DescriptiveAnswerRepository descriptiveAnswerRepository;
+    @Autowired private DescriptiveQuestionRepository descriptiveQuestionRepository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private PersonRepository personRepository;
-
-    @Autowired
-    private AccountRepository accountRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private MajorRepository majorRepository;
-
-    @Autowired
-    private CourseRepository courseRepository;
-
-    @Autowired
-    private TermRepository termRepository;
-
-    @Autowired
-    private OfferedCourseRepository offeredCourseRepository;
-
-    @Autowired
-    private ExamRepository examRepository;
-
-    private String accessToken;
+    private Course course;
+    private Person student;
     private OfferedCourse offeredCourse;
+    private String teacherAccessToken;
+    private String studentAccessToken;
 
     @BeforeEach
     void setup() throws Exception {
-        Role role = roleRepository.findByName("TEACHER").orElseThrow();
+        Role teacherRole = roleRepository.findByName("TEACHER").orElseThrow();
+        Role studentRole = roleRepository.findByName("STUDENT").orElseThrow();
         Major major = majorRepository.findByMajorName("Computer").orElseThrow();
 
-        Person teacher = createPersonWithAccount("TEACHER", role, major);
+        Person teacher = createPersonAndAccount("Teacher", "Teacher",List.of(teacherRole) , teacherRole , major);
+        student = createPersonAndAccount("student", "student",List.of(studentRole) , studentRole , major);
 
-        AuthRequestDTO loginRequest = AuthRequestDTO.builder()
-                .username(teacher.getPhoneNumber())
-                .password(teacher.getNationalCode())
-                .build();
+        course = createCourse("course20", major);
 
-        String response = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+        teacherAccessToken = loginAndGetToken(teacher.getPhoneNumber(), teacher.getNationalCode());
+        studentAccessToken = loginAndGetToken(student.getPhoneNumber(), student.getNationalCode());
 
-        accessToken = objectMapper.readValue(response, AuthenticationResponse.class).getAccessToken();
-
-        Course course = courseRepository.save(Course.builder()
-                .title("course20")
-                .description("Course Description")
-                .major(major)
-                .build());
-
-        Term term = termRepository.save(Term.builder()
-                .startDate(LocalDate.of(2025, 11, 10))
-                .endDate(LocalDate.of(2025, 11, 20))
-                .semester(Semester.FALL)
-                .major(major)
-                .build());
-
-        offeredCourse = offeredCourseRepository.save(OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
-                .term(term)
-                .course(course)
-                .courseStatus(CourseStatus.UNFILLED)
-                .capacity(20)
-                .classLocation("Mashhad")
-                .build());
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
+        offeredCourse = createOfferedCourse(teacher, term, course);
     }
 
     @Test
@@ -125,7 +88,7 @@ class ExamIntegrationTest {
         mockMvc.perform(post("/api/exam")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto))
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
                 .andExpect(status().isCreated());
     }
 
@@ -144,7 +107,7 @@ class ExamIntegrationTest {
         mockMvc.perform(put("/api/exam/" + exam.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto))
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
                 .andExpect(status().isOk());
     }
 
@@ -153,7 +116,7 @@ class ExamIntegrationTest {
         ExamTemplate exam = saveExam("Exam Title", "Exam Description");
 
         mockMvc.perform(delete("/api/exam/" + exam.getId())
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
                 .andExpect(status().isOk());
     }
 
@@ -162,7 +125,7 @@ class ExamIntegrationTest {
         ExamTemplate exam = saveExam("Exam Title", "Exam Description");
 
         mockMvc.perform(get("/api/exam/" + exam.getId())
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
                 .andExpect(status().isOk());
     }
 
@@ -172,7 +135,7 @@ class ExamIntegrationTest {
         saveExam("Exam2", "Desc2");
 
         mockMvc.perform(get("/api/exam")
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
                 .andExpect(status().isOk());
     }
 
@@ -182,35 +145,71 @@ class ExamIntegrationTest {
         saveExam("Exam2", "Desc2");
 
         mockMvc.perform(get("/api/exam/course-exams/" + offeredCourse.getId())
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
                 .andExpect(status().isOk());
     }
 
-    // ---------------- Helper Methods ----------------
 
-    private Person createPersonWithAccount(String name, Role role, Major major) {
-        Person person = Person.builder()
-                .firstName(name)
-                .lastName(name)
-                .phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode())
-                .roles(List.of(role))
-                .major(major)
-                .build();
-        personRepository.saveAndFlush(person);
+    @Test
+    void studentStartExam() throws Exception {
+        student.setOfferedCourses(List.of(offeredCourse));
+        ExamTemplate exam = createExam(offeredCourse);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
 
-        Account account = Account.builder()
-                .username(person.getPhoneNumber())
-                .password(passwordEncoder.encode(person.getNationalCode()))
-                .state(RegisterState.ACTIVE)
-                .person(person)
-                .activeRole(role)
-                .build();
-        accountRepository.saveAndFlush(account);
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
 
-        person.setAccount(account);
-        return person;
+        mockMvc.perform(post("/api/exam/start-exam/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isOk());
     }
+
+    @Test
+    void studentSubmitExam() throws Exception {
+        ExamTemplate exam = createExam(offeredCourse);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+
+        ExamQuestion eq1 = examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        ExamQuestion eq2 = examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
+
+        ExamInstance instance = createExamInstance(student, exam);
+        testAnswerRepository.save(TestAnswer.builder().examInstance(instance).examQuestion(eq1).option(q1.getOptions().get(0)).score(eq1.getQuestionScore()).build());
+        descriptiveAnswerRepository.save(DescriptiveAnswer.builder().examInstance(instance).examQuestion(eq2).answerText("Answer Text").build());
+
+        mockMvc.perform(post("/api/exam/submit-exam/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void submitAnswer() throws Exception {
+        ExamTemplate exam = createExam(offeredCourse);
+        TestQuestion q1 = createTestQuestion(course);
+
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        createExamInstance(student, exam);
+
+        AnswerDTO answerDTO = AnswerDTO.builder()
+                .examId(exam.getId())
+                .questionId(q1.getId())
+                .optionId(q1.getOptions().get(0).getId())
+                .type("test")
+                .build();
+
+        mockMvc.perform(post("/api/exam/submit-answer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(answerDTO))
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isOk());
+    }
+
+
+
+    // ---------------- Helper Methods ----------------
 
     private ExamTemplate saveExam(String title, String description) {
         ExamTemplate exam = ExamTemplate.builder()
@@ -253,5 +252,144 @@ class ExamIntegrationTest {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 10; i++) sb.append(ThreadLocalRandom.current().nextInt(0, 10));
         return sb.toString();
+    }
+
+    private ExamTemplate createExam(OfferedCourse offeredCourse) {
+        ExamTemplate exam = ExamTemplate.builder()
+                .examStartTime(Instant.parse("2025-11-23T11:00:00Z"))
+                .examEndTime(Instant.parse("2025-11-23T12:00:00Z"))
+                .offeredCourse(offeredCourse)
+                .examState(ExamState.STARTED)
+                .title("Exam Title")
+                .description("Exam Description")
+                .deleted(false)
+                .build();
+        offeredCourse.setExamTemplates(new ArrayList<>(List.of(exam)));
+        offeredCourseRepository.save(offeredCourse);
+        return examRepository.save(exam);
+    }
+
+    private TestQuestion createTestQuestion(Course course) {
+        List<Option> options = new ArrayList<>(Arrays.asList(
+                Option.builder().optionText("opt 1").correct(false).build(),
+                Option.builder().optionText("opt 2").correct(true).build(),
+                Option.builder().optionText("opt 3").correct(false).build(),
+                Option.builder().optionText("opt 4").correct(false).build()
+        ));
+        TestQuestion q = TestQuestion.builder()
+                .title("Question Title")
+                .questionText("Question Text")
+                .course(course)
+                .options(options)
+                .defaultScore(2)
+                .build();
+        return testQuestionRepository.save(q);
+    }
+
+
+
+    private DescriptiveQuestion createDescriptiveQuestion(Course course) {
+        DescriptiveQuestion q = DescriptiveQuestion.builder()
+                .title("Descriptive Question")
+                .questionText("Question Text")
+                .course(course)
+                .defaultScore(2)
+                .build();
+        return descriptiveQuestionRepository.save(q);
+    }
+
+    private ExamInstance createExamInstance(Person student, ExamTemplate exam) {
+        ExamInstance instance = ExamInstance.builder()
+                .startAt(LocalDateTime.now())
+                .endAt(LocalDateTime.now().plusHours(2))
+                .status(ExamInstanceStatus.IN_PROGRESS)
+                .person(student)
+                .exam(exam)
+                .totalScore(0)
+                .build();
+        return examInstanceRepository.save(instance);
+    }
+
+
+    private Course createCourse(String title, Major major) {
+        Course course = Course.builder()
+                .title(title)
+                .description("Course Description")
+                .major(major)
+                .build();
+        return courseRepository.save(course);
+    }
+
+    private Term createTerm(Major major, AcademicCalender academicCalender, Semester semester) {
+        Term term = Term.builder().year(2025).academicCalender(academicCalender).semester(semester).major(major).build();
+        return termRepository.save(term);
+    }
+
+    private AcademicCalender createCalender(LocalDate courseRegistrationStart,
+                                            LocalDate courseRegistrationEnd,
+                                            LocalDate classesStartDate,
+                                            LocalDate classesEndDate) {
+        return AcademicCalender.builder()
+                .courseRegistrationStart(courseRegistrationStart)
+                .courseRegistrationEnd(courseRegistrationEnd)
+                .classesStartDate(classesStartDate)
+                .classesEndDate(classesEndDate)
+                .build();
+    }
+
+    private OfferedCourse createOfferedCourse(Person teacher , Term term, Course course) {
+        OfferedCourse oc = OfferedCourse.builder()
+                .classStartTime(LocalTime.now())
+                .classEndTime(LocalTime.now().plusHours(1))
+                .teacher(teacher)
+                .term(term)
+                .course(course)
+                .courseStatus(CourseStatus.UNFILLED)
+                .capacity(20)
+                .classLocation("Mashhad")
+                .build();
+        return offeredCourseRepository.save(oc);
+    }
+
+    private Person createPersonAndAccount(String firstName, String lastName, List<Role> roles , Role activeRole , Major major) {
+        Person person = Person.builder()
+                .firstName(firstName)
+                .lastName(lastName)
+                .phoneNumber(randomPhone())
+                .nationalCode(randomNationalCode())
+                .major(major)
+                .roles(new ArrayList<>(roles))
+                .build();
+
+        Account account = Account.builder()
+                .username(person.getPhoneNumber())
+                .password(passwordEncoder.encode(person.getNationalCode()))
+                .state(RegisterState.ACTIVE)
+                .person(person)
+                .activeRole(activeRole)
+                .build();
+        person.setAccount(account);
+        accountRepository.save(account);
+
+        return personRepository.save(person);
+    }
+
+
+    private String loginAndGetToken(String username, String password) throws Exception {
+        AuthRequestDTO authRequest = AuthRequestDTO.builder()
+                .username(username)
+                .password(password)
+                .build();
+
+        String response = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(authRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        return objectMapper.readValue(response, AuthenticationResponse.class).getAccessToken();
     }
 }
