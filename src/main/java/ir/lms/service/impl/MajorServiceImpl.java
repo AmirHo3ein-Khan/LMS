@@ -28,7 +28,7 @@ public class MajorServiceImpl extends BaseServiceImpl<Major , Long> implements M
 
     @Override
     protected void prePersist(Major major) {
-        if (majorRepository.existsByMajorName(major.getMajorName())){
+        if (majorRepository.findByMajorName(major.getMajorName()).isPresent()){
             throw new DuplicateException(EXIST_MAJOR);
         }
         major.setMajorCode(UUID.randomUUID());
