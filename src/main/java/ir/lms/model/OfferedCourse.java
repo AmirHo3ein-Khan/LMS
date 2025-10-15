@@ -9,9 +9,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,16 +22,19 @@ import java.util.List;
 @SuperBuilder
 public class OfferedCourse extends BaseEntity<Long> {
 
-    private Instant startTime;
+    private DayOfWeek dayOfWeek;
 
-    private Instant endTime;
+    private LocalTime classStartTime;
+
+    private LocalTime classEndTime;
 
     private Integer capacity;
 
     private String classLocation;
 
 
-    private int courseStatus;
+    @Enumerated(EnumType.STRING)
+    private CourseStatus courseStatus;
 
     @ManyToOne
     @JoinColumn(name = "course_id")
@@ -43,7 +45,7 @@ public class OfferedCourse extends BaseEntity<Long> {
     private Person teacher;
 
     @ManyToMany(mappedBy = "offeredCourses")
-    private List<Person> student = new ArrayList<>();
+    private List<Person> students = new ArrayList<>();
 
 
     @ManyToOne
