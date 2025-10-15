@@ -1,16 +1,12 @@
 package ir.lms.service.impl;
 
 import ir.lms.model.*;
-import ir.lms.repository.AccountRepository;
 import ir.lms.repository.OptionRepository;
-import ir.lms.repository.PersonRepository;
 import ir.lms.service.AnswerService;
 import ir.lms.service.base.BaseServiceImpl;
-import ir.lms.util.AnswerFactory;
+import ir.lms.util.factory.AnswerFactory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
-
-import java.security.Principal;
 
 @Service
 public class AnswerServiceImpl extends BaseServiceImpl<Answer, Long> implements AnswerService {
