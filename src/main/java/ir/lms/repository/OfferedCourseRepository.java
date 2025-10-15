@@ -2,6 +2,7 @@ package ir.lms.repository;
 
 import ir.lms.model.OfferedCourse;
 import ir.lms.model.Person;
+import ir.lms.model.Term;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,14 +21,16 @@ public interface OfferedCourseRepository extends JpaRepository<OfferedCourse,Lon
 
 
     @Query("""
-    select (count(oc2) > 0)
-    from OfferedCourse oc2
-    where oc2.teacher = :teacher
-      and oc2.dayOfWeek = :dayOfWeek
-      and oc2.classStartTime < :classEndTime
-      and oc2.classEndTime > :classStartTime
+    select (count(oc) > 0)
+    from OfferedCourse oc
+    where oc.teacher = :teacher AND
+         oc.term = :term AND
+         oc.dayOfWeek = :dayOfWeek AND
+         oc.classStartTime < :classEndTime AND
+         oc.classEndTime > :classStartTime
     """)
     boolean existsOverlappingCourse(@Param("teacher") Person teacher,
+                                    @Param("term") Term term,
                                     @Param("classStartTime") LocalTime classStartTime,
                                     @Param("dayOfWeek") DayOfWeek dayOfWeek,
                                     @Param("classEndTime") LocalTime classEndTime);
