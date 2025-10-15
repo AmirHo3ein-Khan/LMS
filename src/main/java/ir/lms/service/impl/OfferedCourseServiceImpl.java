@@ -10,18 +10,13 @@ import ir.lms.service.base.BaseServiceImpl;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
 import java.security.Principal;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
 public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Long> implements OfferedCourseService {
     private final static String NOT_BE_NULL = "Offered course start and end times must not be null";
-    private final static String FUTURE_ILLEGAL = "Offered course %s time must be in the future";
     private final static String TIME_ILLEGAL = "Offered course start time must be before end time";
     private final static String ILLEGAL_AFTER_START = "Can't %s Offered course after term start date!";
     private final static String TERM_NOT_ALLOWED = "You are not allowed to access this term!";
@@ -45,12 +40,12 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
         OfferedCourse foundedOfferedCourse = offeredCourseRepository.findById(aLong)
                 .orElseThrow(() -> new EntityNotFoundException(NOT_FOUND));
 
-        LocalDate termStartDate = foundedOfferedCourse.getTerm().getStartDate();
+        LocalDate termStartDate = foundedOfferedCourse.getTerm().getAcademicCalender().getCourseRegistrationStart();
         if (!termStartDate.isAfter(LocalDate.now())) {
             throw new IllegalArgumentException(ILLEGAL_AFTER_START);
         }
-        foundedOfferedCourse.setStartTime(offeredCourse.getStartTime());
-        foundedOfferedCourse.setEndTime(offeredCourse.getEndTime());
+        foundedOfferedCourse.setClassStartTime(offeredCourse.getClassStartTime());
+        foundedOfferedCourse.setClassEndTime(offeredCourse.getClassEndTime());
         foundedOfferedCourse.setCapacity(offeredCourse.getCapacity());
         return offeredCourseRepository.save(foundedOfferedCourse);
     }
@@ -58,21 +53,15 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
 
     @Override
     protected void prePersist(OfferedCourse offeredCourse) {
-        LocalDateTime now = LocalDateTime.now();
-        Instant instant = now.toInstant(ZoneOffset.UTC);
-        if (offeredCourse.getStartTime() == null || offeredCourse.getEndTime() == null) {
+
+
+        if (offeredCourseRepository.existsOverlappingCourse(offeredCourse.getTeacher(), offeredCourse.getClassStartTime(), offeredCourse.getDayOfWeek(), offeredCourse.getClassEndTime())) {
+            throw new AccessDeniedException("Over lapping course!");
+        }
+        if (offeredCourse.getClassStartTime() == null || offeredCourse.getClassEndTime() == null) {
             throw new IllegalArgumentException(NOT_BE_NULL);
         }
-
-        if (!offeredCourse.getStartTime().isAfter(instant)) {
-            throw new IllegalArgumentException(String.format(FUTURE_ILLEGAL, "start"));
-        }
-
-        if (!offeredCourse.getEndTime().isAfter(instant)) {
-            throw new IllegalArgumentException(String.format(FUTURE_ILLEGAL, "end"));
-        }
-
-        if (!offeredCourse.getStartTime().isBefore(offeredCourse.getEndTime())) {
+        if (!offeredCourse.getClassStartTime().isBefore(offeredCourse.getClassEndTime())) {
             throw new IllegalArgumentException(TIME_ILLEGAL);
         }
         offeredCourse.setCourseStatus(CourseStatus.UNFILLED);
