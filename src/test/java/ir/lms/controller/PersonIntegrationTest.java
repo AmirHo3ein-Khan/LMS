@@ -1,16 +1,10 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.AuthRequestDTO;
-import ir.lms.util.dto.AuthenticationResponse;
-import ir.lms.util.dto.ChangeRoleRequestDTO;
-import ir.lms.model.Account;
-import ir.lms.model.Person;
-import ir.lms.model.Role;
-import ir.lms.model.enums.RegisterState;
-import ir.lms.repository.AccountRepository;
-import ir.lms.repository.PersonRepository;
-import ir.lms.repository.RoleRepository;
+import ir.lms.model.*;
+import ir.lms.model.enums.*;
+import ir.lms.repository.*;
+import ir.lms.util.dto.*;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -43,19 +39,93 @@ class PersonIntegrationTest {
     @Autowired private PersonRepository personRepository;
     @Autowired private AccountRepository accountRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private CourseRepository courseRepository;
+    @Autowired private MajorRepository majorRepository;
+    @Autowired private TermRepository termRepository;
+    @Autowired private OfferedCourseRepository offeredCourseRepository;
+
 
     private String accessToken;
+    private OfferedCourse offeredCourse;
 
     @BeforeEach
     void setUp() throws Exception {
-        this.accessToken = createAndLoginTestUser();
+        this.accessToken = createAndLoginTestAdmin();
+        Major major = majorRepository.findByMajorName("Computer").get();
+        Course course = createCourse("course16", major);
+        Role teacherRole = roleRepository.findByName("TEACHER").get();
+        Person teacher = createPersonAndAccount("Teacher", "Teacher",List.of(teacherRole) , teacherRole , major);
+        AcademicCalender calender = createCalender(LocalDate.now().plusDays(1),
+                LocalDate.now(),
+                LocalDate.now().plusDays(1),
+                LocalDate.now());
+        Term term = createTerm(major ,calender , Semester.FALL);
+        offeredCourse = createOfferedCourse(teacher , term, course);
     }
 
     @Test
-    void changeRoleTest() throws Exception {
-        ChangeRoleRequestDTO dto = ChangeRoleRequestDTO.builder().role("ADMIN").build();
+    void teacherRegister() throws Exception {
+        PersonDTO dto = buildPersonDTO();
+        mockMvc.perform(post("/api/person/teacher-register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated());
+    }
 
-        mockMvc.perform(post("/api/user/change-role")
+    @Test
+    void managerRegister() throws Exception {
+        PersonDTO dto = buildPersonDTO();
+        mockMvc.perform(post("/api/person/manager-register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated());
+    }
+
+
+    @Test
+    void studentGetCourse() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+        Role studentRole = roleRepository.findByName("STUDENT").get();
+        Person student = createPersonAndAccount("STUDENT", "STUDENT",List.of(studentRole) , studentRole , major);
+        String token = loginAndGetToken(student.getPhoneNumber(), student.getNationalCode());
+        mockMvc.perform(post("/api/person/take-course/" + offeredCourse.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+
+    @Test
+    void addRoleToPerson() throws Exception {
+        Person person = Person.builder()
+                .firstName("Amir Hossein")
+                .lastName("Khanalipour")
+                .phoneNumber(randomPhone())
+                .nationalCode(randomNationalCode())
+                .roles(new ArrayList<>())
+                .build();
+        personRepository.save(person);
+
+        AddRoleRequest request = AddRoleRequest.builder()
+                .role("ADMIN")
+                .personId(person.getId())
+                .build();
+
+        mockMvc.perform(post("/api/person/add/person-role")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+    }
+
+
+    @Test
+    void changeRoleTest() throws Exception {
+        ChangeRoleRequestDTO dto = ChangeRoleRequestDTO.builder().role("USER").build();
+
+        mockMvc.perform(post("/api/person/change-role")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
@@ -64,7 +134,7 @@ class PersonIntegrationTest {
 
     @Test
     void getRolesTest() throws Exception {
-        mockMvc.perform(get("/api/user/person-roles")
+        mockMvc.perform(get("/api/person/person-roles")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
@@ -74,28 +144,23 @@ class PersonIntegrationTest {
 
     // ---------------- Helper Methods ----------------
 
-    private String createAndLoginTestUser() throws Exception {
-        Role userRole = roleRepository.findByName("USER").get();
+    private String createAndLoginTestAdmin() throws Exception {
         Role adminRole = roleRepository.findByName("ADMIN").get();
-
-        Person person = createPerson("User", "User", List.of(userRole, adminRole));
-        Account account = createAccount(person, userRole);
-
-        return loginAndGetToken(account.getUsername(), person.getNationalCode());
+        Role userRole = roleRepository.findByName("USER").get();
+        Person admin = createPersonAndAccount("ADMIN", "ADMIN",List.of(adminRole , userRole) , adminRole , null);
+        return loginAndGetToken(admin.getAccount().getUsername(), admin.getNationalCode());
     }
 
-    private Person createPerson(String firstName, String lastName, List<Role> roles) {
+    private Person createPersonAndAccount(String firstName, String lastName, List<Role> roles , Role activeRole , Major major) {
         Person person = Person.builder()
                 .firstName(firstName)
                 .lastName(lastName)
                 .phoneNumber(randomPhone())
                 .nationalCode(randomNationalCode())
+                .major(major)
                 .roles(new ArrayList<>(roles))
                 .build();
-        return personRepository.save(person);
-    }
 
-    private Account createAccount(Person person, Role activeRole) {
         Account account = Account.builder()
                 .username(person.getPhoneNumber())
                 .password(passwordEncoder.encode(person.getNationalCode()))
@@ -104,8 +169,11 @@ class PersonIntegrationTest {
                 .activeRole(activeRole)
                 .build();
         person.setAccount(account);
-        return accountRepository.save(account);
+        accountRepository.save(account);
+
+        return personRepository.save(person);
     }
+
 
     private String loginAndGetToken(String username, String password) throws Exception {
         AuthRequestDTO authRequest = AuthRequestDTO.builder()
@@ -135,5 +203,55 @@ class PersonIntegrationTest {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 10; i++) sb.append(ThreadLocalRandom.current().nextInt(0, 10));
         return sb.toString();
+    }
+
+    private PersonDTO buildPersonDTO() {
+        return PersonDTO.builder()
+                .firstName("Amir Hossein")
+                .lastName("Khanalipour")
+                .phoneNumber(randomPhone())
+                .nationalCode(randomNationalCode())
+                .majorName("Computer")
+                .build();
+    }
+
+    private Course createCourse(String title, Major major) {
+        Course course = Course.builder()
+                .title(title)
+                .description("Course Description")
+                .major(major)
+                .build();
+        return courseRepository.save(course);
+    }
+
+    private Term createTerm(Major major, AcademicCalender academicCalender, Semester semester) {
+        Term term = Term.builder().year(2025).academicCalender(academicCalender).semester(semester).major(major).build();
+        return termRepository.save(term);
+    }
+
+    private AcademicCalender createCalender(LocalDate courseRegistrationStart,
+                                            LocalDate courseRegistrationEnd,
+                                            LocalDate classesStartDate,
+                                            LocalDate classesEndDate) {
+        return AcademicCalender.builder()
+                .courseRegistrationStart(courseRegistrationStart)
+                .courseRegistrationEnd(courseRegistrationEnd)
+                .classesStartDate(classesStartDate)
+                .classesEndDate(classesEndDate)
+                .build();
+    }
+
+    private OfferedCourse createOfferedCourse(Person teacher , Term term, Course course) {
+        OfferedCourse oc = OfferedCourse.builder()
+                .classStartTime(LocalTime.now())
+                .classEndTime(LocalTime.now().plusHours(1))
+                .teacher(teacher)
+                .term(term)
+                .course(course)
+                .courseStatus(CourseStatus.UNFILLED)
+                .capacity(20)
+                .classLocation("Mashhad")
+                .build();
+        return offeredCourseRepository.save(oc);
     }
 }
