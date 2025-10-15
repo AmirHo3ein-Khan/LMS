@@ -5,6 +5,7 @@ import ir.lms.exception.IllegalRequestException;
 import ir.lms.model.*;
 import ir.lms.repository.CourseRepository;
 import ir.lms.repository.PersonRepository;
+import ir.lms.repository.RoleRepository;
 import ir.lms.repository.TermRepository;
 import ir.lms.util.dto.mapper.base.BaseMapper;
 import ir.lms.util.dto.OfferedCourseDTO;
@@ -21,6 +22,8 @@ public abstract class OfferedCourseMapper implements BaseMapper<OfferedCourse , 
     private CourseRepository courseRepository;
     @Autowired
     private PersonRepository personRepository;
+    @Autowired
+    private RoleRepository roleRepository;
 
     public abstract OfferedCourseDTO toDto(OfferedCourse entity);
 
@@ -41,6 +44,9 @@ public abstract class OfferedCourseMapper implements BaseMapper<OfferedCourse , 
         if (dto.getTeacherId() != null) {
             Person person = personRepository.findById(dto.getTeacherId())
                     .orElseThrow(() -> new EntityNotFoundException("not found"));
+            if (!person.getRoles().contains(roleRepository.findByName("TEACHER").get())){
+                throw new IllegalRequestException("Teacher not found!");
+            }
             Term term = termRepository.findById(dto.getTermId())
                     .orElseThrow(() -> new EntityNotFoundException("not found"));
             if (!(person.getMajor() == term.getMajor())){
