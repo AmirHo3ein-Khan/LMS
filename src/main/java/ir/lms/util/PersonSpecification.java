@@ -31,8 +31,6 @@ public class PersonSpecification {
             Join<Person, ?> roleJoin = root.join("roles", JoinType.LEFT);
             predicates.add(criteriaBuilder.like(criteriaBuilder.lower(roleJoin.get("name")), pattern));
 
-            query.distinct(true);
-
             return criteriaBuilder.or(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
     }
