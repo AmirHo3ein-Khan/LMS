@@ -5,7 +5,7 @@ import ir.lms.model.*;
 import ir.lms.repository.*;
 import ir.lms.service.QuestionService;
 import ir.lms.service.base.BaseServiceImpl;
-import ir.lms.util.QuestionFactory;
+import ir.lms.util.factory.QuestionFactory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
@@ -90,7 +90,7 @@ public class QuestionServiceImpl extends BaseServiceImpl<Question, Long> impleme
         ExamTemplate exam = examRepository.findById(examId)
                 .orElseThrow(() -> new EntityNotFoundException("Exam not found!"));
         if (!exam.isDeleted()) {
-            return questionRepository.findQuestionsOfExam(examId);
+            return questionRepository.findByExamQuestions_Exam_Id(examId);
         }
         throw new EntityNotFoundException("Exam don't have questions!");
     }
