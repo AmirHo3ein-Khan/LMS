@@ -9,8 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,16 +20,16 @@ import java.util.List;
 @SuperBuilder
 public class Term extends BaseEntity<Long> {
 
-    @NotNull(message = "Start date cannot be null.")
-    private LocalDate startDate;
-
-    @NotNull(message = "End date cannot be null.")
-    private LocalDate endDate;
+    @Column(name = "term-year")
+    private Integer year;
 
     @Enumerated(EnumType.STRING)
     private Semester semester;
 
     private boolean deleted;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    private AcademicCalender academicCalender;
 
     @ManyToOne
     private Major major;
