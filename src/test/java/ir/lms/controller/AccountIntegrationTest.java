@@ -1,8 +1,6 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.AddRoleRequest;
-import ir.lms.util.dto.PersonDTO;
 import ir.lms.util.dto.AuthRequestDTO;
 import ir.lms.util.dto.AuthenticationResponse;
 import ir.lms.model.Account;
@@ -12,6 +10,7 @@ import ir.lms.model.enums.RegisterState;
 import ir.lms.repository.AccountRepository;
 import ir.lms.repository.PersonRepository;
 import ir.lms.repository.RoleRepository;
+import ir.lms.util.dto.ChangePassDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -27,39 +26,30 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class AdminIntegrationTest {
+class AccountIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private PersonRepository personRepository;
-
-    @Autowired
-    private AccountRepository accountRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private RoleRepository roleRepository;
+    @Autowired private PersonRepository personRepository;
+    @Autowired private AccountRepository accountRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     private String accessToken;
+    private Person admin;
 
     @BeforeEach
     void setup() throws Exception {
         Role role = roleRepository.findByName("ADMIN").orElseThrow();
-        Person admin = createAdminPerson(role);
+        this.admin = createAdminPerson(role);
 
         AuthRequestDTO loginRequest = AuthRequestDTO.builder()
                 .username(admin.getPhoneNumber())
@@ -79,52 +69,28 @@ class AdminIntegrationTest {
     }
 
     @Test
-    void teacherRegister() throws Exception {
-        PersonDTO dto = buildPersonDTO();
-        mockMvc.perform(post("/api/admin/teacher-register")
+    void changePassword() throws Exception {
+        String oldPassword = admin.getNationalCode();
+        String newPassword = "NewPass123";
+
+        ChangePassDTO dto = new ChangePassDTO(newPassword, oldPassword);
+
+        mockMvc.perform(put("/api/account/change-pass")
+                        .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto))
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isCreated());
-    }
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
 
-    @Test
-    void managerRegister() throws Exception {
-        PersonDTO dto = buildPersonDTO();
-        mockMvc.perform(post("/api/admin/manager-register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto))
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isCreated());
-    }
-
-    @Test
-    void addRoleToPerson() throws Exception {
-        Person person = Person.builder()
-                .firstName("Amir Hossein")
-                .lastName("Khanalipour")
-                .phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode())
-                .build();
-        personRepository.save(person);
-
-        AddRoleRequest request = AddRoleRequest.builder()
-                .role("ADMIN")
-                .personId(person.getId())
-                .build();
-
-        mockMvc.perform(post("/api/admin/add/person-role")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
+        Account updated = accountRepository.findByUsername(admin.getPhoneNumber()).orElseThrow();
+        assertTrue(passwordEncoder.matches(newPassword, updated.getPassword()));
     }
 
     @Test
     void activeAccount() throws Exception {
         Account account = createAccountWithState(RegisterState.PENDING);
 
-        mockMvc.perform(post("/api/admin/active-role/" + account.getId())
+        mockMvc.perform(post("/api/account/active-account/" + account.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
 
@@ -136,7 +102,7 @@ class AdminIntegrationTest {
     void inactiveAccount() throws Exception {
         Account account = createAccountWithState(RegisterState.ACTIVE);
 
-        mockMvc.perform(post("/api/admin/inactive-role/" + account.getId())
+        mockMvc.perform(post("/api/account/inactive-account/" + account.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
 
@@ -191,16 +157,6 @@ class AdminIntegrationTest {
 
         person.setAccount(account);
         return account;
-    }
-
-    private PersonDTO buildPersonDTO() {
-        return PersonDTO.builder()
-                .firstName("Amir Hossein")
-                .lastName("Khanalipour")
-                .phoneNumber(randomPhone())
-                .nationalCode(randomNationalCode())
-                .majorName("Computer")
-                .build();
     }
 
     private static String randomPhone() {
