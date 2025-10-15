@@ -21,8 +21,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.Instant;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -37,16 +38,26 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class OfferedCourseIntegrationTest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private RoleRepository roleRepository;
-    @Autowired private PersonRepository personRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private AccountRepository accountRepository;
-    @Autowired private MajorRepository majorRepository;
-    @Autowired private CourseRepository courseRepository;
-    @Autowired private TermRepository termRepository;
-    @Autowired private OfferedCourseRepository offeredCourseRepository;
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private PersonRepository personRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private AccountRepository accountRepository;
+    @Autowired
+    private MajorRepository majorRepository;
+    @Autowired
+    private CourseRepository courseRepository;
+    @Autowired
+    private TermRepository termRepository;
+    @Autowired
+    private OfferedCourseRepository offeredCourseRepository;
 
     private String accessToken;
 
@@ -60,11 +71,15 @@ class OfferedCourseIntegrationTest {
         Major major = getMajor("Computer");
         Course course = createCourse("course9", major);
         Person teacher = createTeacher(major);
-        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
 
         OfferedCourseDTO dto = OfferedCourseDTO.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
+                .classStartTime(LocalTime.now())
+                .classEndTime(LocalTime.now().plusHours(1))
                 .capacity(20)
                 .classLocation("Tehran")
                 .courseId(course.getId())
@@ -78,18 +93,67 @@ class OfferedCourseIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated());
     }
+    @Test
+    void createOfferedCourseWithOverlappingShouldReturnAccessDine() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course9", major);
+        Person teacher = createTeacher(major);
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
+
+        OfferedCourseDTO dto = OfferedCourseDTO.builder()
+                .classStartTime(LocalTime.now())
+                .classEndTime(LocalTime.now().plusHours(1))
+                .dayOfWeek(DayOfWeek.FRIDAY)
+                .capacity(20)
+                .classLocation("Tehran")
+                .courseId(course.getId())
+                .teacherId(teacher.getId())
+                .termId(term.getId())
+                .build();
+
+        mockMvc.perform(post("/api/offeredCourse")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated());
+
+        OfferedCourseDTO dto2 = OfferedCourseDTO.builder()
+                .classStartTime(LocalTime.now().plusMinutes(30))
+                .classEndTime(LocalTime.now().plusHours(1).plusMinutes(30))
+                .capacity(20)
+                .dayOfWeek(DayOfWeek.FRIDAY)
+                .classLocation("Tehran")
+                .courseId(course.getId())
+                .teacherId(teacher.getId())
+                .termId(term.getId())
+                .build();
+
+        mockMvc.perform(post("/api/offeredCourse")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto2))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isForbidden());
+    }
 
     @Test
     void updateOfferedCourseTest() throws Exception {
         Major major = getMajor("Computer");
         Course course = createCourse("course10", major);
         Person teacher = createTeacher(major);
-        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
         OfferedCourse offeredCourse = createOfferedCourse(course, term);
 
         OfferedCourseDTO dto = OfferedCourseDTO.builder()
-                .startTime(Instant.parse("2026-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2026-11-23T12:00:00Z"))
+                .classStartTime(LocalTime.now())
+                .classEndTime(LocalTime.now().plusHours(1))
                 .capacity(20)
                 .classLocation("Tehran")
                 .courseId(course.getId())
@@ -108,7 +172,11 @@ class OfferedCourseIntegrationTest {
     void deleteOfferedCourseTest() throws Exception {
         Major major = getMajor("Computer");
         Course course = createCourse("course11", major);
-        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
         OfferedCourse offeredCourse = createOfferedCourse(course, term);
 
         mockMvc.perform(delete("/api/offeredCourse/" + offeredCourse.getId())
@@ -120,7 +188,11 @@ class OfferedCourseIntegrationTest {
     void findByIdTest() throws Exception {
         Major major = getMajor("Computer");
         Course course = createCourse("course12", major);
-        Term term = createTerm(major, LocalDate.of(2025,11,10), LocalDate.of(2025,11,20), Semester.FALL);
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
         OfferedCourse offeredCourse = createOfferedCourse(course, term);
 
         mockMvc.perform(get("/api/offeredCourse/" + offeredCourse.getId())
@@ -199,15 +271,27 @@ class OfferedCourseIntegrationTest {
         return courseRepository.save(course);
     }
 
-    private Term createTerm(Major major, LocalDate start, LocalDate end, Semester semester) {
-        Term term = Term.builder().startDate(start).endDate(end).semester(semester).major(major).build();
+    private Term createTerm(Major major, AcademicCalender academicCalender, Semester semester) {
+        Term term = Term.builder().year(2025).academicCalender(academicCalender).semester(semester).major(major).build();
         return termRepository.save(term);
+    }
+
+    private AcademicCalender createCalender(LocalDate courseRegistrationStart,
+                                            LocalDate courseRegistrationEnd,
+                                            LocalDate classesStartDate,
+                                            LocalDate classesEndDate) {
+        return AcademicCalender.builder()
+                .courseRegistrationStart(courseRegistrationStart)
+                .courseRegistrationEnd(courseRegistrationEnd)
+                .classesStartDate(classesStartDate)
+                .classesEndDate(classesEndDate)
+                .build();
     }
 
     private OfferedCourse createOfferedCourse(Course course, Term term) {
         OfferedCourse offeredCourse = OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
+                .classStartTime(LocalTime.now())
+                .classEndTime(LocalTime.now().plusHours(1))
                 .term(term)
                 .course(course)
                 .courseStatus(CourseStatus.UNFILLED)
