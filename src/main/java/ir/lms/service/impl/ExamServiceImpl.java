@@ -18,6 +18,7 @@ import java.security.Principal;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> implements ExamService {
@@ -96,7 +97,7 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
     @Override
     public void startExam(Long examId, Principal principal) {
         Account account = accountRepository.findByUsername(principal.getName())
-                .orElseThrow(() -> new AccessDeniedException(String.format(NOT_BE_NULL, "Account")));
+                .orElseThrow(() -> new AccessDeniedException(NOT_BE_NULL));
 
         Person person = personRepository.findById(account.getPerson().getId())
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Person")));
@@ -104,14 +105,14 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
         ExamTemplate examTemplate = examRepository.findById(examId)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Exam")));
 
-
-        if (examInstanceRepository.existsByPersonAndExam(person, examTemplate)) {
+        Optional<ExamInstance> foundedExamInstanceByPersonAndExam = examInstanceRepository.findByPersonAndExam(person, examTemplate);
+        if (foundedExamInstanceByPersonAndExam.isPresent() && foundedExamInstanceByPersonAndExam.get().getStatus().equals(ExamInstanceStatus.COMPLETED)) {
             throw new AccessDeniedException("You already complete this exam!");
         }
 
-        if (personRepository.isStudentAssignedToCourse(account.getPerson().getId(), examTemplate.getOfferedCourse().getId())) {
+        if (personRepository.existsByIdAndOfferedCourses_Id(account.getPerson().getId(), examTemplate.getOfferedCourse().getId())) {
             if (examTemplate.getExamState().equals(ExamState.STARTED)) {
-                Instant now = Instant.now();
+                LocalDateTime now = LocalDateTime.now();
                 ExamInstance examInstance = ExamInstance.builder()
                         .exam(examTemplate)
                         .person(person)
@@ -134,7 +135,7 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
     @Override
     public void submitExam(Long examId, Principal principal) {
         Account account = accountRepository.findByUsername(principal.getName())
-                .orElseThrow(() -> new AccessDeniedException(String.format(NOT_BE_NULL, "Account")));
+                .orElseThrow(() -> new AccessDeniedException(NOT_BE_NULL));
 
         ExamTemplate exam = examRepository.findById(examId)
                 .orElseThrow(() -> new EntityNotFoundException("Student with this id not found : " + examId));
@@ -146,7 +147,7 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
             throw new AccessDeniedException("You have already submitted this exam!");
         }
         studentExam.setStatus(ExamInstanceStatus.COMPLETED);
-        studentExam.setEndAt(Instant.now());
+        studentExam.setEndAt(LocalDateTime.now());
 
         gradingService.autoTestGrading(examId, account.getPerson().getId());
 
