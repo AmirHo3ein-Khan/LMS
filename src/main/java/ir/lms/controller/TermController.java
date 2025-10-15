@@ -1,18 +1,16 @@
 package ir.lms.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
 import ir.lms.model.Term;
 import ir.lms.service.TermService;
 import ir.lms.util.dto.*;
+import ir.lms.util.dto.mapper.CalenderMapper;
 import ir.lms.util.dto.mapper.TermMapper;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -21,13 +19,16 @@ public class TermController {
 
     private final TermService termService;
     private final TermMapper termMapper;
+    private final CalenderMapper calenderMapper;
 
-    public TermController(TermService termService, TermMapper termMapper) {
+    public TermController(TermService termService, TermMapper termMapper, CalenderMapper calenderMapper) {
+        this.calenderMapper = calenderMapper;
         this.termService = termService;
         this.termMapper = termMapper;
     }
 
     private static final String ADMIN_OR_MANAGER = "hasAnyRole('ADMIN' , 'MANAGER')";
+    private static final String ALL_AUTHENTICATED = "hasAnyRole('ADMIN','MANAGER','STUDENT','TEACHER')";
 
 
     @PreAuthorize(ADMIN_OR_MANAGER)
@@ -46,7 +47,7 @@ public class TermController {
 
     @PreAuthorize(ADMIN_OR_MANAGER)
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<TermDTO>> update(@PathVariable Long id,@Valid @RequestBody TermDTO dto) {
+    public ResponseEntity<ApiResponse<TermDTO>> update(@PathVariable Long id, @Valid @RequestBody TermDTO dto) {
         Term updated = termService.update(id, termMapper.toEntity(dto));
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.<TermDTO>builder()
@@ -62,7 +63,7 @@ public class TermController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
         termService.delete(id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Term deleted success." , true));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Term deleted success.", true));
     }
 
     @PreAuthorize(ADMIN_OR_MANAGER)
@@ -90,6 +91,20 @@ public class TermController {
                                 .toList())
                         .timestamp(Instant.now().toString())
                         .build()
+        );
+    }
+
+    @PreAuthorize(ALL_AUTHENTICATED)
+    @GetMapping("/academic-calender/{termId}")
+    public ResponseEntity<ApiResponse<AcademicCalenderDTO>> findTermCalender(@PathVariable Long termId) {
+        termService.findTermCalenderByTermId(termId);
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<AcademicCalenderDTO>builder()
+                        .success(true)
+                        .message("calender.get.success")
+                        .data(calenderMapper.toDto(termService.findTermCalenderByTermId(termId)))
+                        .build()
+
         );
     }
 }
