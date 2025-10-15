@@ -2,6 +2,7 @@ package ir.lms.service.impl;
 
 import ir.lms.exception.AccessDeniedException;
 import ir.lms.exception.EntityNotFoundException;
+import ir.lms.model.AcademicCalender;
 import ir.lms.model.Term;
 import ir.lms.repository.TermRepository;
 import ir.lms.service.TermService;
@@ -9,7 +10,6 @@ import ir.lms.service.base.BaseServiceImpl;
 import ir.lms.util.SemesterUtil;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,11 +17,10 @@ import java.util.List;
 @Service
 public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements TermService {
 
-    private final static String NOT_BE_NULL = "Term start and end times must not be null";
-    private final static String FUTURE_ILLEGAL = "Term %s time must be in the future";
-    private final static String TIME_ILLEGAL = "Term start time must be before end time";
+    private final static String YEAR_ILLEGAL = "Term year must be in future";
     private final static String ILLEGAL_AFTER_START = "Can't %s term after start date!";
     private final static String NOT_FOUND = "%s not found!";
+    private final static String ALREADY_EXISTS = "Term already exists in major in %s semester!";
 
 
     private final TermRepository termRepository;
@@ -34,22 +33,18 @@ public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements Term
     @Override
     protected void prePersist(Term term) {
         LocalDate now = LocalDate.now();
-        if (term.getStartDate() == null || term.getEndDate() == null) {
-            throw new IllegalArgumentException(NOT_BE_NULL);
+
+        term.setYear(term.getAcademicCalender().getCourseRegistrationStart().getYear());
+
+        if (term.getYear() < now.getYear()) {
+            throw new IllegalArgumentException(YEAR_ILLEGAL);
         }
 
-        if (!term.getStartDate().isAfter(now)) {
-            throw new IllegalArgumentException(String.format(FUTURE_ILLEGAL, "start"));
-        }
-
-        if (!term.getEndDate().isAfter(now)) {
-            throw new IllegalArgumentException(String.format(FUTURE_ILLEGAL, "end"));
-        }
-
-        if (!term.getStartDate().isBefore(term.getEndDate())) {
-            throw new IllegalArgumentException(TIME_ILLEGAL);
-        }
         term.setSemester(SemesterUtil.currentSemester());
+        if (termRepository.existsBySemesterAndMajor(term.getSemester(), term.getMajor())
+                && term.getYear() == now.getYear()) {
+            throw new IllegalArgumentException(String.format(ALREADY_EXISTS, term.getSemester()));
+        }
         term.setDeleted(false);
     }
 
@@ -58,7 +53,7 @@ public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements Term
         Term term = termRepository.findById(aLong)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "term")));
         LocalDate now = LocalDate.now();
-        if (!term.getStartDate().isAfter(now)) {
+        if (!term.getAcademicCalender().getCourseRegistrationStart().isAfter(now)) {
             throw new AccessDeniedException(String.format(ILLEGAL_AFTER_START, "delete"));
         }
         term.setDeleted(true);
@@ -91,18 +86,21 @@ public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements Term
         Term foundedTerm = termRepository.findById(aLong)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "term")));
         LocalDate now = LocalDate.now();
-        if (!foundedTerm.getStartDate().isAfter(now)) {
+        if (!foundedTerm.getAcademicCalender().getCourseRegistrationStart().isAfter(now)) {
             throw new AccessDeniedException(String.format(ILLEGAL_AFTER_START, "update"));
         }
-        foundedTerm.setStartDate(term.getStartDate());
-        foundedTerm.setEndDate(term.getEndDate());
+        if (term.isDeleted()){
+            throw new EntityNotFoundException(String.format(NOT_FOUND, "term"));
+        }
+        foundedTerm.setYear(term.getYear());
         foundedTerm.setSemester(term.getSemester());
         return termRepository.save(foundedTerm);
     }
 
-
-//    @Override
-//    protected void preUpdate(Term term) {
-//
-//    }
+    @Override
+    public AcademicCalender findTermCalenderByTermId(Long termId) {
+        Term term = termRepository.findById(termId)
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "term")));
+        return term.getAcademicCalender();
+    }
 }
