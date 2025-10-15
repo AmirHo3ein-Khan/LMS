@@ -10,6 +10,5 @@ import java.util.Optional;
 
 @Repository
 public interface ExamInstanceRepository extends JpaRepository<ExamInstance,Long> {
-    boolean existsByPersonAndExam(Person person, ExamTemplate examTemplate);
     Optional<ExamInstance> findByPersonAndExam(Person person, ExamTemplate examTemplate);
 }
