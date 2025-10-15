@@ -54,8 +54,10 @@ class TermIntegrationTest {
     @Test
     void saveTerm() throws Exception {
         TermDTO termDTO = TermDTO.builder()
-                .startDate(LocalDate.of(2025, 11, 10))
-                .endDate(LocalDate.of(2025, 11, 20))
+                .courseRegistrationStart(LocalDate.of(2026, 11, 20))
+                .courseRegistrationEnd(LocalDate.of(2026, 11, 20))
+                .classesEndDate(LocalDate.of(2026, 11, 20))
+                .classesStartDate(LocalDate.of(2026, 11, 20))
                 .majorName("Computer")
                 .build();
 
@@ -69,11 +71,19 @@ class TermIntegrationTest {
     @Test
     void updateTerm() throws Exception {
         Major major = getMajor("Computer");
-        Term term = createTerm(major, LocalDate.of(2025, 11, 10), LocalDate.of(2025, 11, 20));
+
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+
+        Term term = createTerm(major,calender , Semester.FALL);
 
         TermDTO termDTO = TermDTO.builder()
-                .startDate(LocalDate.of(2025, 11, 10))
-                .endDate(LocalDate.of(2025, 11, 20))
+                .courseRegistrationStart(LocalDate.of(2025, 11, 20))
+                .courseRegistrationEnd(LocalDate.of(2025, 11, 20))
+                .classesEndDate(LocalDate.of(2025, 11, 20))
+                .classesStartDate(LocalDate.of(2025, 11, 20))
                 .majorName("Computer")
                 .build();
 
@@ -87,8 +97,11 @@ class TermIntegrationTest {
     @Test
     void deleteTerm() throws Exception {
         Major major = getMajor("Computer");
-        Term term = createTerm(major, LocalDate.of(2025, 11, 10), LocalDate.of(2025, 11, 20));
-
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
         mockMvc.perform(delete("/api/term/" + term.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
@@ -98,8 +111,11 @@ class TermIntegrationTest {
     @Test
     void findTermById() throws Exception {
         Major major = getMajor("Computer");
-        Term term = createTerm(major, LocalDate.of(2025, 11, 10), LocalDate.of(2025, 11, 20));
-
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
         mockMvc.perform(get("/api/term/" + term.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
@@ -155,14 +171,21 @@ class TermIntegrationTest {
         return objectMapper.readValue(response, AuthenticationResponse.class).getAccessToken();
     }
 
-    private Term createTerm(Major major, LocalDate start, LocalDate end) {
-        Term term = Term.builder()
-                .startDate(start)
-                .endDate(end)
-                .semester(Semester.FALL)
-                .major(major)
-                .build();
+    private Term createTerm(Major major, AcademicCalender academicCalender, Semester semester) {
+        Term term = Term.builder().year(2025).academicCalender(academicCalender).semester(semester).major(major).build();
         return termRepository.save(term);
+    }
+
+    private AcademicCalender createCalender(LocalDate courseRegistrationStart,
+                                            LocalDate courseRegistrationEnd,
+                                            LocalDate classesStartDate,
+                                            LocalDate classesEndDate) {
+        return AcademicCalender.builder()
+                .courseRegistrationStart(courseRegistrationStart)
+                .courseRegistrationEnd(courseRegistrationEnd)
+                .classesStartDate(classesStartDate)
+                .classesEndDate(classesEndDate)
+                .build();
     }
 
     private Major getMajor(String name) {
