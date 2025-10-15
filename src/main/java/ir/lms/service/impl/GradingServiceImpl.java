@@ -4,10 +4,7 @@ import ir.lms.model.*;
 import ir.lms.repository.*;
 import ir.lms.service.GradingService;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class GradingServiceImpl implements GradingService {
@@ -39,6 +36,7 @@ public class GradingServiceImpl implements GradingService {
         ExamInstance examInstance = examInstanceRepository.findByPersonAndExam(person, exam)
                 .orElseThrow(() -> new RuntimeException("Exam Instance Not Found"));
 
+        if (examInstance.getAnswers() != null) {
         List<Answer> answers = examInstance.getAnswers();
         for (Answer answer : answers) {
             if (answer instanceof TestAnswer) {
@@ -53,6 +51,7 @@ public class GradingServiceImpl implements GradingService {
                 } else {
                     answer.setScore(0.0);
                 }
+        }
                 answerRepository.save(answer);
                 double score = answer.getScore();
                 examInstance.setTotalScore(examInstance.getTotalScore() + score);
