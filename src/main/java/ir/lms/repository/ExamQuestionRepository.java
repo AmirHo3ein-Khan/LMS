@@ -9,6 +9,5 @@ import java.util.Optional;
 
 @Repository
 public interface ExamQuestionRepository extends JpaRepository<ExamQuestion,Long> {
-
     Optional<ExamQuestion> findByExamAndQuestion(ExamTemplate examTemplate , Question question);
 }
