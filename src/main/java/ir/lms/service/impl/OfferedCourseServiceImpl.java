@@ -55,7 +55,8 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
     protected void prePersist(OfferedCourse offeredCourse) {
 
 
-        if (offeredCourseRepository.existsOverlappingCourse(offeredCourse.getTeacher(), offeredCourse.getClassStartTime(), offeredCourse.getDayOfWeek(), offeredCourse.getClassEndTime())) {
+        if (offeredCourseRepository.existsOverlappingCourse(offeredCourse.getTeacher() , offeredCourse.getTerm()
+                , offeredCourse.getClassStartTime(), offeredCourse.getDayOfWeek(), offeredCourse.getClassEndTime())) {
             throw new AccessDeniedException("Over lapping course!");
         }
         if (offeredCourse.getClassStartTime() == null || offeredCourse.getClassEndTime() == null) {
