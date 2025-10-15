@@ -2,7 +2,8 @@ package ir.lms.util.dto;
 
 import lombok.*;
 
-import java.time.Instant;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 
 @Builder
 @Getter
@@ -10,8 +11,9 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OfferedCourseDTO {
-    private Instant startTime;
-    private Instant endTime;
+    private DayOfWeek dayOfWeek;
+    private LocalTime classStartTime;
+    private LocalTime classEndTime;
     private Integer capacity;
     private String classLocation;
     private Long courseId;
