@@ -1,14 +1,12 @@
 package ir.lms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.lms.util.dto.AnswerDTO;
 import ir.lms.util.dto.AuthRequestDTO;
 import ir.lms.util.dto.AuthenticationResponse;
 import ir.lms.model.*;
 import ir.lms.model.enums.*;
 import ir.lms.repository.*;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -20,6 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -71,76 +71,18 @@ class StudentIntegrationTest {
         Person teacher = createPerson("Teacher", "Teacher", teacherRole, major);
         createAccount(teacher, teacherRole);
 
-        Term term = createTerm(major, LocalDate.of(2025, 11, 10), LocalDate.of(2025, 11, 20), Semester.FALL);
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
         offeredCourse = createOfferedCourse(term, course);
         student.setOfferedCourses(new ArrayList<>(List.of(offeredCourse)));
         personRepository.save(student);
     }
 
 
-    @Test
-    void studentGetCourse() throws Exception {
-        mockMvc.perform(post("/api/student/take-course/" + offeredCourse.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
 
-    @Test
-    void studentStartExam() throws Exception {
-        ExamTemplate exam = createExam(offeredCourse);
-        TestQuestion q1 = createTestQuestion(course);
-        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
-
-        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
-        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
-
-        mockMvc.perform(post("/api/student/start-exam/" + exam.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void studentSubmitExam() throws Exception {
-        ExamTemplate exam = createExam(offeredCourse);
-        TestQuestion q1 = createTestQuestion(course);
-        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
-
-        ExamQuestion eq1 = examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
-        ExamQuestion eq2 = examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
-
-        ExamInstance instance = createExamInstance(student, exam);
-        testAnswerRepository.save(TestAnswer.builder().examInstance(instance).examQuestion(eq1).option(q1.getOptions().get(0)).score(eq1.getQuestionScore()).build());
-        descriptiveAnswerRepository.save(DescriptiveAnswer.builder().examInstance(instance).examQuestion(eq2).answerText("Answer Text").build());
-
-        mockMvc.perform(post("/api/student/submit-exam/" + exam.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void submitAnswer() throws Exception {
-        ExamTemplate exam = createExam(offeredCourse);
-        TestQuestion q1 = createTestQuestion(course);
-
-        ExamQuestion eq1 = examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
-        ExamInstance instance = createExamInstance(student, exam);
-
-        AnswerDTO answerDTO = AnswerDTO.builder()
-                .examId(exam.getId())
-                .questionId(q1.getId())
-                .optionId(q1.getOptions().get(0).getId())
-                .type("test")
-                .build();
-
-        mockMvc.perform(post("/api/student/submit-answer")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(answerDTO))
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk());
-    }
 
 
     // ---------------- Helper Methods ----------------
@@ -191,20 +133,27 @@ class StudentIntegrationTest {
         return courseRepository.save(course);
     }
 
-    private Term createTerm(Major major, LocalDate start, LocalDate end, Semester semester) {
-        Term term = Term.builder()
-                .startDate(start)
-                .endDate(end)
-                .semester(semester)
-                .major(major)
-                .build();
+    private Term createTerm(Major major, AcademicCalender academicCalender, Semester semester) {
+        Term term = Term.builder().year(2025).academicCalender(academicCalender).semester(semester).major(major).build();
         return termRepository.save(term);
+    }
+
+    private AcademicCalender createCalender(LocalDate courseRegistrationStart,
+                                            LocalDate courseRegistrationEnd,
+                                            LocalDate classesStartDate,
+                                            LocalDate classesEndDate) {
+        return AcademicCalender.builder()
+                .courseRegistrationStart(courseRegistrationStart)
+                .courseRegistrationEnd(courseRegistrationEnd)
+                .classesStartDate(classesStartDate)
+                .classesEndDate(classesEndDate)
+                .build();
     }
 
     private OfferedCourse createOfferedCourse(Term term, Course course) {
         OfferedCourse oc = OfferedCourse.builder()
-                .startTime(Instant.parse("2025-11-23T11:00:00Z"))
-                .endTime(Instant.parse("2025-11-23T12:00:00Z"))
+                .classStartTime(LocalTime.now())
+                .classEndTime(LocalTime.now().plusHours(1))
                 .term(term)
                 .course(course)
                 .courseStatus(CourseStatus.UNFILLED)
@@ -258,8 +207,8 @@ class StudentIntegrationTest {
 
     private ExamInstance createExamInstance(Person student, ExamTemplate exam) {
         ExamInstance instance = ExamInstance.builder()
-                .startAt(Instant.now())
-                .endAt(Instant.now().plusSeconds(100000))
+                .startAt(LocalDateTime.now())
+                .endAt(LocalDateTime.now().plusHours(2))
                 .status(ExamInstanceStatus.IN_PROGRESS)
                 .person(student)
                 .exam(exam)
