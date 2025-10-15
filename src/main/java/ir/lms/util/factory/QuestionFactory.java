@@ -1,4 +1,4 @@
-package ir.lms.util;
+package ir.lms.util.factory;
 
 import ir.lms.model.DescriptiveQuestion;
 import ir.lms.model.Option;
