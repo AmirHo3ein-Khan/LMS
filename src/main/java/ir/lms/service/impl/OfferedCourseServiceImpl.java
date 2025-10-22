@@ -18,7 +18,7 @@ import java.util.List;
 public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Long> implements OfferedCourseService {
     private final static String NOT_BE_NULL = "Offered course start and end times must not be null";
     private final static String TIME_ILLEGAL = "Offered course start time must be before end time";
-    private final static String ILLEGAL_AFTER_START = "Can't %s Offered course after term start date!";
+    private final static String ILLEGAL_AFTER_START = "Can't update Offered course after term start date!";
     private final static String TERM_NOT_ALLOWED = "You are not allowed to access this term!";
     private final static String NOT_FOUND = "%s not found!";
 
@@ -41,7 +41,7 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
                 .orElseThrow(() -> new EntityNotFoundException(NOT_FOUND));
 
         LocalDate termStartDate = foundedOfferedCourse.getTerm().getAcademicCalender().getCourseRegistrationStart();
-        if (!termStartDate.isAfter(LocalDate.now())) {
+        if (termStartDate.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(ILLEGAL_AFTER_START);
         }
         foundedOfferedCourse.setClassStartTime(offeredCourse.getClassStartTime());
@@ -62,12 +62,11 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
         if (offeredCourse.getClassStartTime() == null || offeredCourse.getClassEndTime() == null) {
             throw new IllegalArgumentException(NOT_BE_NULL);
         }
-        if (!offeredCourse.getClassStartTime().isBefore(offeredCourse.getClassEndTime())) {
+        if (offeredCourse.getClassStartTime().isAfter(offeredCourse.getClassEndTime())) {
             throw new IllegalArgumentException(TIME_ILLEGAL);
         }
         offeredCourse.setCourseStatus(CourseStatus.UNFILLED);
     }
-
 
     @Override
     public List<OfferedCourse> findAllTeacherCourse(Principal principal) {
@@ -75,9 +74,8 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
         Account account = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException(String.format(NOT_FOUND, "Account")));
         Person person = account.getPerson();
-        return person.getOfferedCourses();
+        return offeredCourseRepository.findAllByTeacher(person);
     }
-
 
     @Override
     public List<OfferedCourse> findAllStudentCourses(Principal principal) {
@@ -85,10 +83,8 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Account")));
 
         Person person = account.getPerson();
-
-        return person.getOfferedCourses();
+        return offeredCourseRepository.findByStudents_Id(person.getId());
     }
-
 
     @Override
     public List<OfferedCourse> findAllTermCourses(Long termId, Principal principal) {
@@ -98,11 +94,9 @@ public class OfferedCourseServiceImpl extends BaseServiceImpl<OfferedCourse, Lon
         Term term = termRepository.findById(termId)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Term")));
 
-        if (!account.getActiveRole().getName().equals("ADMIN")) {
             if (!account.getPerson().getMajor().getMajorName().equals(term.getMajor().getMajorName())) {
                 throw new AccessDeniedException(TERM_NOT_ALLOWED);
             }
-        }
-        return term.getOfferedCourses();
+        return offeredCourseRepository.findAllByTerm(term);
     }
 }

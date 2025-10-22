@@ -35,7 +35,7 @@ public class CourseServiceImpl extends BaseServiceImpl<Course, Long> implements 
         if (major.isDeleted()) {
             throw new EntityNotFoundException(String.format(NOT_FOUND, "Major"));
         }
-        if (courseRepository.findByTitleAndMajor(course.getTitle() , course.getMajor()).isPresent()) {
+        if (courseRepository.findByTitleAndMajor(course.getTitle(), course.getMajor()).isPresent()) {
             throw new DuplicateException(EXIST_COURSE);
         }
         course.setDeleted(false);
@@ -53,7 +53,8 @@ public class CourseServiceImpl extends BaseServiceImpl<Course, Long> implements 
     public List<Course> findAllMajorCourses(String majorName) {
         Major major = majorRepository.findByMajorName(majorName)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Major")));
-        return major.getCourses();
+
+        return courseRepository.findByMajor(major);
     }
 
     @Override
@@ -77,10 +78,14 @@ public class CourseServiceImpl extends BaseServiceImpl<Course, Long> implements 
     public Course update(Long aLong, Course course) {
         Course foundedCourse = courseRepository.findById(aLong)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Course")));
-        foundedCourse.setTitle(course.getTitle());
-        foundedCourse.setMajor(course.getMajor());
-        foundedCourse.setUnit(course.getUnit());
-        foundedCourse.setDescription(course.getDescription());
-        return courseRepository.save(foundedCourse);
+        if (!foundedCourse.isDeleted()) {
+            foundedCourse.setTitle(course.getTitle());
+            foundedCourse.setMajor(course.getMajor());
+            foundedCourse.setUnit(course.getUnit());
+            foundedCourse.setDescription(course.getDescription());
+            return courseRepository.save(foundedCourse);
+        } else {
+            throw new EntityNotFoundException(String.format(NOT_FOUND, "Course"));
+        }
     }
 }

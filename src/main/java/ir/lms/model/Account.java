@@ -3,7 +3,6 @@ package ir.lms.model;
 import ir.lms.model.base.BaseEntity;
 import ir.lms.model.enums.RegisterState;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -47,9 +46,5 @@ public class Account extends BaseEntity<Long> {
 
     @ManyToOne
     private Role activeRole;
-
-    //todo session token : when login get session token(uuid), when login set , when logout remove (date) (has expired time)
-
-    // inner log (crud login logout) elk log
 
 }

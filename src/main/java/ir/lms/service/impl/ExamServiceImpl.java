@@ -26,7 +26,7 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
     private final static String NOT_BE_NULL = "exam start and end times must not be null";
     private final static String FUTURE_ILLEGAL = "exam %s time must be in the future";
     private final static String TIME_ILLEGAL = "exam start time must be before end time";
-    private final static String ILLEGAL_AFTER_START = "Can't %s exam after term start date!";
+    private final static String ILLEGAL_AFTER_START = "Can't update exam after term start date!";
     private final static String NOT_FOUND = "%s not found!";
 
     private final ExamRepository examRepository;
@@ -55,13 +55,13 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
         if (examTemplate.getExamStartTime() == null || examTemplate.getExamEndTime() == null) {
             throw new IllegalArgumentException(NOT_BE_NULL);
         }
-        if (!examTemplate.getExamStartTime().isAfter(instant)) {
+        if (examTemplate.getExamStartTime().isBefore(instant)) {
             throw new IllegalArgumentException(String.format(FUTURE_ILLEGAL, "start"));
         }
-        if (!examTemplate.getExamEndTime().isAfter(instant)) {
+        if (examTemplate.getExamEndTime().isBefore(instant)) {
             throw new IllegalArgumentException(String.format(FUTURE_ILLEGAL, "end"));
         }
-        if (!examTemplate.getExamStartTime().isBefore(examTemplate.getExamEndTime())) {
+        if (examTemplate.getExamStartTime().isAfter(examTemplate.getExamEndTime())) {
             throw new IllegalArgumentException(TIME_ILLEGAL);
         }
 
@@ -106,6 +106,7 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Exam")));
 
         Optional<ExamInstance> foundedExamInstanceByPersonAndExam = examInstanceRepository.findByPersonAndExam(person, examTemplate);
+        //fixme: is the exam started can student start it again before complete it
         if (foundedExamInstanceByPersonAndExam.isPresent() && foundedExamInstanceByPersonAndExam.get().getStatus().equals(ExamInstanceStatus.COMPLETED)) {
             throw new AccessDeniedException("You already complete this exam!");
         }

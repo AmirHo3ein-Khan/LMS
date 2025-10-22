@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.util.List;
 
 @Repository
 public interface OfferedCourseRepository extends JpaRepository<OfferedCourse,Long> {
@@ -34,5 +35,10 @@ public interface OfferedCourseRepository extends JpaRepository<OfferedCourse,Lon
                                     @Param("classStartTime") LocalTime classStartTime,
                                     @Param("dayOfWeek") DayOfWeek dayOfWeek,
                                     @Param("classEndTime") LocalTime classEndTime);
+
+    List<OfferedCourse> findAllByTeacher(Person person);
+    List<OfferedCourse> findByStudents_Id(Long studentId);
+
+    List<OfferedCourse> findAllByTerm(Term term);
 
 }

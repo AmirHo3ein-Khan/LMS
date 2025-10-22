@@ -85,11 +85,7 @@ public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements Term
     public Term update(Long aLong, Term term) {
         Term foundedTerm = termRepository.findById(aLong)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "term")));
-        LocalDate now = LocalDate.now();
-        if (!foundedTerm.getAcademicCalender().getCourseRegistrationStart().isAfter(now)) {
-            throw new AccessDeniedException(String.format(ILLEGAL_AFTER_START, "update"));
-        }
-        if (term.isDeleted()){
+        if (foundedTerm.isDeleted()){
             throw new EntityNotFoundException(String.format(NOT_FOUND, "term"));
         }
         foundedTerm.setYear(term.getYear());

@@ -1,6 +1,5 @@
 package ir.lms.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
 import ir.lms.util.dto.*;
 import ir.lms.util.dto.mapper.MajorMapper;
 import ir.lms.model.Major;
@@ -12,7 +11,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -78,7 +76,6 @@ public class MajorController {
         );
     }
 
-    @PreAuthorize(ADMIN)
     @GetMapping
     public ResponseEntity<ApiResponse<List<MajorDTO>>> findAll() {
         return ResponseEntity.status(HttpStatus.OK).body(

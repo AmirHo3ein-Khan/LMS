@@ -45,21 +45,16 @@ public class MajorServiceImpl extends BaseServiceImpl<Major , Long> implements M
 
     @Override
     public List<Major> findAll() {
-        List<Major> majors = majorRepository.findAll();
-        List<Major> result = new ArrayList<>();
-        for (Major major : majors) {
-            if (!major.isDeleted()) {
-                result.add(major);
-            }
-        }
-        return result;
+        return majorRepository.findByDeletedIsFalse();
     }
 
     @Override
     public Major update(Long aLong, Major major) {
         Major foundedMajor = majorRepository.findById(aLong)
                 .orElseThrow(() -> new EntityNotFoundException(NOT_FOUND));
-
+        if(majorRepository.findByMajorName(major.getMajorName()).isPresent()){
+            throw new DuplicateException(EXIST_MAJOR);
+        }
         foundedMajor.setMajorName(major.getMajorName());
         foundedMajor.setMajorCode(UUID.randomUUID());
         return majorRepository.save(foundedMajor);

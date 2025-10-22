@@ -26,7 +26,7 @@ public class PersonSpecification {
             predicates.add(criteriaBuilder.like(criteriaBuilder.lower(accountJoin.get("username")), pattern));
 
             Join<Person, ?> majorJoin = root.join("major", JoinType.LEFT);
-            predicates.add(criteriaBuilder.like(criteriaBuilder.lower(majorJoin.get("name")), pattern));
+            predicates.add(criteriaBuilder.like(criteriaBuilder.lower(majorJoin.get("majorName")), pattern));
 
             Join<Person, ?> roleJoin = root.join("roles", JoinType.LEFT);
             predicates.add(criteriaBuilder.like(criteriaBuilder.lower(roleJoin.get("name")), pattern));

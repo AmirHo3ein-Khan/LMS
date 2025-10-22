@@ -1,6 +1,5 @@
 package ir.lms.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
 import ir.lms.model.OfferedCourse;
 import ir.lms.service.OfferedCourseService;
 import ir.lms.util.dto.*;
@@ -67,7 +66,7 @@ public class OfferedCourseController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
         offeredCourseService.delete(id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Course deleted success." , true));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Course.deleted.success." , true));
     }
 
     @PreAuthorize(ADMIN_OR_MANAGER)

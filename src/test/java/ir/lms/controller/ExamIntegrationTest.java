@@ -1,5 +1,6 @@
 package ir.lms.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ir.lms.util.dto.*;
 import ir.lms.model.*;
@@ -16,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,23 +37,40 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class ExamIntegrationTest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private RoleRepository roleRepository;
-    @Autowired private ExamRepository examRepository;
-    @Autowired private TermRepository termRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private MajorRepository majorRepository;
-    @Autowired private CourseRepository courseRepository;
-    @Autowired private PersonRepository personRepository;
-    @Autowired private AccountRepository accountRepository;
-    @Autowired private TestAnswerRepository testAnswerRepository;
-    @Autowired private ExamInstanceRepository examInstanceRepository;
-    @Autowired private ExamQuestionRepository examQuestionRepository;
-    @Autowired private TestQuestionRepository testQuestionRepository;
-    @Autowired private OfferedCourseRepository offeredCourseRepository;
-    @Autowired private DescriptiveAnswerRepository descriptiveAnswerRepository;
-    @Autowired private DescriptiveQuestionRepository descriptiveQuestionRepository;
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private ExamRepository examRepository;
+    @Autowired
+    private TermRepository termRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private MajorRepository majorRepository;
+    @Autowired
+    private CourseRepository courseRepository;
+    @Autowired
+    private PersonRepository personRepository;
+    @Autowired
+    private AccountRepository accountRepository;
+    @Autowired
+    private TestAnswerRepository testAnswerRepository;
+    @Autowired
+    private ExamInstanceRepository examInstanceRepository;
+    @Autowired
+    private ExamQuestionRepository examQuestionRepository;
+    @Autowired
+    private TestQuestionRepository testQuestionRepository;
+    @Autowired
+    private OfferedCourseRepository offeredCourseRepository;
+    @Autowired
+    private DescriptiveAnswerRepository descriptiveAnswerRepository;
+    @Autowired
+    private DescriptiveQuestionRepository descriptiveQuestionRepository;
 
     private Course course;
     private Person student;
@@ -65,8 +84,8 @@ class ExamIntegrationTest {
         Role studentRole = roleRepository.findByName("STUDENT").orElseThrow();
         Major major = majorRepository.findByMajorName("Computer").orElseThrow();
 
-        Person teacher = createPersonAndAccount("Teacher", "Teacher",List.of(teacherRole) , teacherRole , major);
-        student = createPersonAndAccount("student", "student",List.of(studentRole) , studentRole , major);
+        Person teacher = createPersonAndAccount("Teacher", "Teacher", List.of(teacherRole), teacherRole, major);
+        student = createPersonAndAccount("student", "student", List.of(studentRole), studentRole, major);
 
         course = createCourse("course20", major);
 
@@ -77,7 +96,7 @@ class ExamIntegrationTest {
                 LocalDate.of(2025, 11, 10),
                 LocalDate.of(2025, 11, 10),
                 LocalDate.of(2025, 11, 10));
-        Term term = createTerm(major,calender , Semester.FALL);
+        Term term = createTerm(major, calender, Semester.FALL);
         offeredCourse = createOfferedCourse(teacher, term, course);
     }
 
@@ -322,8 +341,8 @@ class ExamIntegrationTest {
                 LocalDate.of(2025, 11, 10),
                 LocalDate.of(2025, 11, 10),
                 LocalDate.of(2025, 11, 10));
-        Term term = createTerm(major,calender , Semester.FALL);
-        Person teacher  = createPersonAndAccount("ali", "akbari", List.of(teacherRole), teacherRole, major);
+        Term term = createTerm(major, calender, Semester.FALL);
+        Person teacher = createPersonAndAccount("ali", "akbari", List.of(teacherRole), teacherRole, major);
         OfferedCourse offeredCourse1 = createOfferedCourse(teacher, term, course);
         student.setOfferedCourses(List.of(offeredCourse1));
         ExamTemplate exam = createExam(offeredCourse);
@@ -401,6 +420,7 @@ class ExamIntegrationTest {
                         .header("Authorization", "Bearer " + studentAccessToken))
                 .andExpect(status().isNotFound());
     }
+
     @Test
     void studentSubmitExam_StudentCompletedTheExam_ShouldReturn_FORBIDDEN() throws Exception {
         ExamTemplate exam = createExam(offeredCourse);
@@ -459,6 +479,54 @@ class ExamIntegrationTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void gradingDescriptiveQuestionOfExam() throws Exception {
+        ExamTemplate exam = createExam(offeredCourse);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
+        createExamInstance(student, exam);
+
+        AnswerDTO tAnswerDTO = AnswerDTO.builder()
+                .examId(exam.getId())
+                .questionId(q1.getId())
+                .optionId(q1.getOptions().get(0).getId())
+                .type("test")
+                .build();
+
+        AnswerDTO dAnswerDTO = AnswerDTO.builder()
+                .examId(exam.getId())
+                .questionId(q2.getId())
+                .type("descriptive")
+                .answerText("Answer Text")
+                .build();
+
+        mockMvc.perform(post("/api/exam/submit-answer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(tAnswerDTO))
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/exam/submit-answer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dAnswerDTO))
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isOk());
+
+        GradingDTO build = GradingDTO.builder().studentId(student.getId())
+                .examId(exam.getId())
+                .questionId(q1.getId())
+                .score(2d)
+                .build();
+
+        mockMvc.perform(post("/api/exam/grading-descriptive")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(build))
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isOk());
+    }
 
 
     // ---------------- Helper Methods ----------------
@@ -539,7 +607,6 @@ class ExamIntegrationTest {
     }
 
 
-
     private DescriptiveQuestion createDescriptiveQuestion(Course course) {
         DescriptiveQuestion q = DescriptiveQuestion.builder()
                 .title("Descriptive Question")
@@ -589,7 +656,7 @@ class ExamIntegrationTest {
                 .build();
     }
 
-    private OfferedCourse createOfferedCourse(Person teacher , Term term, Course course) {
+    private OfferedCourse createOfferedCourse(Person teacher, Term term, Course course) {
         OfferedCourse oc = OfferedCourse.builder()
                 .classStartTime(LocalTime.now())
                 .classEndTime(LocalTime.now().plusHours(1))
@@ -603,7 +670,7 @@ class ExamIntegrationTest {
         return offeredCourseRepository.save(oc);
     }
 
-    private Person createPersonAndAccount(String firstName, String lastName, List<Role> roles , Role activeRole , Major major) {
+    private Person createPersonAndAccount(String firstName, String lastName, List<Role> roles, Role activeRole, Major major) {
         Person person = Person.builder()
                 .firstName(firstName)
                 .lastName(lastName)

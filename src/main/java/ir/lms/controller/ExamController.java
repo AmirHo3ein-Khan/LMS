@@ -5,10 +5,8 @@ import ir.lms.model.ExamTemplate;
 import ir.lms.model.Option;
 import ir.lms.service.AnswerService;
 import ir.lms.service.ExamService;
-import ir.lms.util.dto.AnswerDTO;
-import ir.lms.util.dto.ApiResponse;
-import ir.lms.util.dto.ApiResponseDTO;
-import ir.lms.util.dto.ExamDTO;
+import ir.lms.service.GradingService;
+import ir.lms.util.dto.*;
 import ir.lms.util.dto.mapper.AnswerMapper;
 import ir.lms.util.dto.mapper.ExamMapper;
 import jakarta.validation.Valid;
@@ -28,12 +26,14 @@ public class ExamController {
     private final ExamMapper examMapper;
     private final AnswerService answerService;
     private final AnswerMapper answerMapper;
+    private final GradingService gradingService;
 
-    public ExamController(ExamService examService, ExamMapper examMapper, AnswerService answerService, AnswerMapper answerMapper) {
+    public ExamController(ExamService examService, ExamMapper examMapper, AnswerService answerService, AnswerMapper answerMapper, GradingService gradingService) {
         this.examService = examService;
         this.examMapper = examMapper;
         this.answerService = answerService;
         this.answerMapper = answerMapper;
+        this.gradingService = gradingService;
     }
 
     private static final String TEACHER = "hasRole('TEACHER')";
@@ -143,6 +143,13 @@ public class ExamController {
         }
         answerService.saveAnswer(answerDTO.getType() , answer, option, answerDTO.getAnswerText());
         return ResponseEntity.ok(new ApiResponseDTO("Answer saved success.", true));
+    }
+
+    @PreAuthorize(TEACHER)
+    @PostMapping("/grading-descriptive")
+    public ResponseEntity<ApiResponseDTO> gradingDescriptiveQuestionOfExam(@RequestBody GradingDTO dto) {
+        gradingService.descriptiveGrading(dto.getExamId(), dto.getStudentId() , dto.getQuestionId() ,  dto.getScore());
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Grading success", true));
     }
 
 }

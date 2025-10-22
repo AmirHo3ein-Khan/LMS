@@ -2,6 +2,7 @@ package ir.lms.controller;
 
 import ir.lms.model.Person;
 import ir.lms.model.Role;
+import ir.lms.service.GradingService;
 import ir.lms.service.PersonService;
 import ir.lms.service.StudentService;
 import ir.lms.util.dto.*;
@@ -36,6 +37,7 @@ public class PersonController {
 
     private static final String ADMIN = "hasRole('ADMIN')";
     private static final String STUDENT = "hasRole('STUDENT')";
+    private static final String TEACHER = "hasRole('TEACHER')";
     private static final String ALL_AUTHENTICATED = "hasAnyRole('ADMIN','MANAGER','STUDENT','TEACHER','USER')";
     private static final String ADMIN_OR_MANAGER = "hasAnyRole('ADMIN','MANAGER')";
 

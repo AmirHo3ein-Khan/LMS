@@ -12,7 +12,6 @@ import java.security.PublicKey;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 
 @Service
 public class JwtService {
@@ -74,11 +73,6 @@ public class JwtService {
         } catch (final JwtException e) {
             throw new RuntimeException("Invalid token", e);
         }
-    }
-
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractClaims(token);
-        return claimsResolver.apply(claims);
     }
 
 //    public String refreshAccessToken(final String refreshToken) {

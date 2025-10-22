@@ -20,19 +20,17 @@ public class QuestionServiceImpl extends BaseServiceImpl<Question, Long> impleme
     private final QuestionRepository questionRepository;
     private final ExamQuestionRepository examQuestionRepository;
     private final CourseRepository courseRepository;
-    private final AccountRepository accountRepository;
 
     protected QuestionServiceImpl(JpaRepository<Question, Long> repository,
                                   QuestionFactory questionFactory, ExamRepository examRepository,
                                   QuestionRepository questionRepository, ExamQuestionRepository examQuestionRepository,
-                                  CourseRepository courseRepository, AccountRepository accountRepository) {
+                                  CourseRepository courseRepository) {
         super(repository);
         this.questionFactory = questionFactory;
         this.examRepository = examRepository;
         this.questionRepository = questionRepository;
         this.examQuestionRepository = examQuestionRepository;
         this.courseRepository = courseRepository;
-        this.accountRepository = accountRepository;
     }
 
     public Question createQuestion(String type, Question question, List<Option> options) {
@@ -92,23 +90,18 @@ public class QuestionServiceImpl extends BaseServiceImpl<Question, Long> impleme
         if (!exam.isDeleted()) {
             return questionRepository.findByExamQuestions_Exam_Id(examId);
         }
-        throw new EntityNotFoundException("Exam don't have questions!");
+        throw new EntityNotFoundException("Exam not found!");
     }
 
     @Override
     public List<Question> findQuestionsOfCourse(Long courseId, Principal principal) {
-        Account account = accountRepository.findByUsername(principal.getName())
-                .orElseThrow(() -> new EntityNotFoundException("Account not found!"));
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new EntityNotFoundException("Course not found!"));
-        for (OfferedCourse offeredCourse : account.getPerson().getOfferedCourses()) {
-            if (offeredCourse.getCourse().equals(course)) {
-                if (!course.isDeleted()) {
-                    return course.getQuestions();
-                }
-            }
+        questionRepository.findByCourse_Id(courseId);
+        if (!course.isDeleted()) {
+            return questionRepository.findByCourse_Id(courseId);
         }
-        throw new EntityNotFoundException("Course don't have questions!");
+        throw new EntityNotFoundException("Course not found!");
     }
 
 

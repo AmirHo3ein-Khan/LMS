@@ -1,7 +1,7 @@
 package ir.lms.service.base;
 
+import ir.lms.exception.EntityNotFoundException;
 import ir.lms.model.base.BaseEntity;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.io.Serializable;
@@ -29,6 +29,7 @@ public abstract class BaseServiceImpl<T extends BaseEntity<ID>, ID extends Seria
     @Override
     public void delete(ID id) {
         preDelete(id);
+        repository.findById(id).orElseThrow(() -> new EntityNotFoundException(ENTITY_NOT_FOUND));
         repository.deleteById(id);
         postDelete(id);
     }

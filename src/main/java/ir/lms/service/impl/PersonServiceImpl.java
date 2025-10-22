@@ -73,7 +73,7 @@ public class PersonServiceImpl  extends BaseServiceImpl<Person, Long> implements
     @Override
     public void activeAccount(Long id) {
         Account account = accountRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(String.format(NOT_FOUND, "Account")));
+                .orElseThrow(() -> new EntityNotFoundException(String.format(NOT_FOUND, "Account")));
         account.setState(RegisterState.ACTIVE);
         accountRepository.save(account);
     }
@@ -102,7 +102,7 @@ public class PersonServiceImpl  extends BaseServiceImpl<Person, Long> implements
             account.setPassword(passwordEncoder.encode(dto.getNewPassword()));
             accountRepository.save(account);
         } else
-            throw new IllegalArgumentException("Old password doesn't match");
+            throw new AccessDeniedException("Old password doesn't match");
     }
 
     @Override

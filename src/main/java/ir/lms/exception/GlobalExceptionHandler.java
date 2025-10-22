@@ -16,8 +16,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionResponse> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
         ExceptionResponse exceptionResponse = new ExceptionResponse(
                 Instant.now().toString(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                HttpStatus.FORBIDDEN.value(),
+                HttpStatus.FORBIDDEN.getReasonPhrase(),
                 e.getMessage(),
                 request.getRequestURI()
         );
@@ -29,8 +29,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionResponse> handleEntityNotFoundException(EntityNotFoundException e, HttpServletRequest request) {
         ExceptionResponse exceptionResponse = new ExceptionResponse(
                 Instant.now().toString(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
                 e.getMessage(),
                 request.getRequestURI()
         );
@@ -42,8 +42,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionResponse> handleDuplicateException(DuplicateException e, HttpServletRequest request) {
         ExceptionResponse exceptionResponse = new ExceptionResponse(
                 Instant.now().toString(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
                 e.getMessage(),
                 request.getRequestURI()
         );
@@ -64,20 +64,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(exceptionResponse);
     }
 
-
-    @ExceptionHandler(IllegalRequestException.class)
-    public ResponseEntity<ExceptionResponse> handleIllegalRequestException(IllegalRequestException e, HttpServletRequest request) {
-        ExceptionResponse exceptionResponse = new ExceptionResponse(
-                Instant.now().toString(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                e.getMessage(),
-                request.getRequestURI()
-        );
-        e.printStackTrace();
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(exceptionResponse);
-    }
-
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ExceptionResponse> handleException(Exception e, HttpServletRequest request) {
         ExceptionResponse exceptionResponse = new ExceptionResponse(
@@ -93,7 +79,47 @@ public class GlobalExceptionHandler {
 
 
     @ExceptionHandler(CourseRegisterDateException.class)
-    public ResponseEntity<ExceptionResponse> handleException(CourseRegisterDateException e, HttpServletRequest request) {
+    public ResponseEntity<ExceptionResponse> handleCourseRegisterDateException(CourseRegisterDateException e, HttpServletRequest request) {
+        ExceptionResponse exceptionResponse = new ExceptionResponse(
+                Instant.now().toString(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI()
+        );
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(exceptionResponse);
+    }
+
+    @ExceptionHandler(ExamNotStartedException.class)
+    public ResponseEntity<ExceptionResponse> handleExamNotStartedException(ExamNotStartedException e, HttpServletRequest request) {
+        ExceptionResponse exceptionResponse = new ExceptionResponse(
+                Instant.now().toString(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI()
+        );
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(exceptionResponse);
+    }
+
+    @ExceptionHandler(ExamExpiredException.class)
+    public ResponseEntity<ExceptionResponse> handleExamExpiredException(ExamExpiredException e, HttpServletRequest request) {
+        ExceptionResponse exceptionResponse = new ExceptionResponse(
+                Instant.now().toString(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                e.getMessage(),
+                request.getRequestURI()
+        );
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(exceptionResponse);
+    }
+
+
+    @ExceptionHandler(CourseHasNotLimitException.class)
+    public ResponseEntity<ExceptionResponse> handleCourseHasNotLimitException(CourseHasNotLimitException e, HttpServletRequest request) {
         ExceptionResponse exceptionResponse = new ExceptionResponse(
                 Instant.now().toString(),
                 HttpStatus.BAD_REQUEST.value(),

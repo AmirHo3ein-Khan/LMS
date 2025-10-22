@@ -59,8 +59,8 @@ public class StudentServiceImpl implements StudentService {
 
         if (person.getOfferedCourses() != null) {
             Integer totalUnits = offeredCourseRepository.getTotalUnitsByPersonId(person.getId());
-            if (totalUnits + offeredCourse.getCourse().getUnit() <= 20) {
-                throw new IllegalArgumentException(UNIT_LIMITED);
+            if (totalUnits + offeredCourse.getCourse().getUnit() >= 20) {
+                throw new AccessDeniedException(UNIT_LIMITED);
             }
         }
         Integer capacity = offeredCourse.getCapacity();
