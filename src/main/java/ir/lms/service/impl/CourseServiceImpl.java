@@ -69,9 +69,7 @@ public class CourseServiceImpl extends BaseServiceImpl<Course, Long> implements 
 
     @Override
     public List<Course> findAll() {
-        return courseRepository.findAll().stream()
-                .filter(course -> !course.isDeleted())
-                .toList();
+        return courseRepository.findByDeletedIsFalse();
     }
 
     @Override

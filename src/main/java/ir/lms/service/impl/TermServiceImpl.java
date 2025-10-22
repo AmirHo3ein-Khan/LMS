@@ -71,14 +71,7 @@ public class TermServiceImpl extends BaseServiceImpl<Term, Long> implements Term
 
     @Override
     public List<Term> findAll() {
-        List<Term> terms = termRepository.findAll();
-        List<Term> result = new ArrayList<>();
-        for (Term term : terms) {
-            if (!term.isDeleted()) {
-                result.add(term);
-            }
-        }
-        return result;
+        return termRepository.findByDeletedIsFalse();
     }
 
     @Override

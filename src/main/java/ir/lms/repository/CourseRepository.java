@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface CourseRepository extends JpaRepository<Course,Long> {
     Optional<Course> findByTitleAndMajor(String title, Major major);
     List<Course> findByMajor(Major major);
+    List<Course> findByDeletedIsFalse();
 }

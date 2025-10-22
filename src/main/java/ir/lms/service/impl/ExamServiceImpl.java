@@ -167,14 +167,7 @@ public class ExamServiceImpl extends BaseServiceImpl<ExamTemplate, Long> impleme
 
     @Override
     public List<ExamTemplate> findAll() {
-        List<ExamTemplate> examTemplates = examRepository.findAll();
-        List<ExamTemplate> result = new ArrayList<>();
-        for (ExamTemplate examTemplate : examTemplates) {
-            if (!examTemplate.isDeleted()) {
-                result.add(examTemplate);
-            }
-        }
-        return result;
+        return examRepository.findByDeletedIsFalse();
     }
 
     @Override
