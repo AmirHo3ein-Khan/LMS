@@ -1,9 +1,9 @@
 package ir.lms.service;
 
 import ir.lms.util.dto.AuthRequestDTO;
-import ir.lms.util.dto.AuthResponseDTO;
+import ir.lms.util.dto.AuthenticationResponse;
 
 public interface AuthService {
-    AuthResponseDTO login(AuthRequestDTO authRequestDTO);
+    AuthenticationResponse login(AuthRequestDTO authRequestDTO);
     void logOut(String token);
 }

@@ -24,22 +24,14 @@ import java.util.Set;
 @NoArgsConstructor
 public class Person extends BaseEntity<Long> {
 
-    @NotBlank(message = "first name cannot be empty")
-    @NotNull(message = "first name cannot be null")
     private String firstName;
 
-    @NotBlank(message = "lastname cannot be empty")
-    @NotNull(message = "lastname cannot be null")
     private String lastName;
 
     @Column(unique = true)
-    @NotBlank(message = "National code cannot be empty")
-    @NotNull(message = "National code cannot be null")
     private String nationalCode;
 
     @Column(unique = true)
-    @NotBlank(message = "National code cannot be empty")
-    @NotNull(message = "National code cannot be null")
     private String phoneNumber;
 
     @ManyToMany(fetch = FetchType.EAGER)

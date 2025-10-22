@@ -20,8 +20,6 @@ import java.util.List;
 @SuperBuilder
 public class Option extends BaseEntity<Long> {
     @Column(nullable = false)
-    @NotBlank(message = "Text cannot be empty")
-    @NotNull(message = "Text cannot be null")
     private String optionText;
 
     @Column(nullable = false)

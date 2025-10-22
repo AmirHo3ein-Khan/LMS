@@ -73,15 +73,13 @@ class AccountIntegrationTest {
         String oldPassword = admin.getNationalCode();
         String newPassword = "NewPass123";
 
-        ChangePassDTO dto = new ChangePassDTO(newPassword, oldPassword);
+        ChangePassDTO dto = new ChangePassDTO(oldPassword,newPassword);
 
         mockMvc.perform(put("/api/account/change-pass")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-
+                .andExpect(status().isOk());
         Account updated = accountRepository.findByUsername(admin.getPhoneNumber()).orElseThrow();
         assertTrue(passwordEncoder.matches(newPassword, updated.getPassword()));
     }

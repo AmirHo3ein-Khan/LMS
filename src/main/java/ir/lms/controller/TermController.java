@@ -27,6 +27,7 @@ public class TermController {
         this.termMapper = termMapper;
     }
 
+    private static final String ADMIN = "hasAnyRole('ADMIN')";
     private static final String ADMIN_OR_MANAGER = "hasAnyRole('ADMIN' , 'MANAGER')";
     private static final String ALL_AUTHENTICATED = "hasAnyRole('ADMIN','MANAGER','STUDENT','TEACHER')";
 
@@ -47,64 +48,38 @@ public class TermController {
 
     @PreAuthorize(ADMIN_OR_MANAGER)
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<TermDTO>> update(@PathVariable Long id, @Valid @RequestBody TermDTO dto) {
+    public ResponseEntity<TermDTO> update(@PathVariable Long id, @Valid @RequestBody TermDTO dto) {
         Term updated = termService.update(id, termMapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<TermDTO>builder()
-                        .success(true)
-                        .message("course.creation.success")
-                        .data(termMapper.toDto(updated))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+        return ResponseEntity.status(HttpStatus.OK).body(termMapper.toDto(updated));
     }
 
     @PreAuthorize(ADMIN_OR_MANAGER)
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         termService.delete(id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Term deleted success.", true));
+        return ResponseEntity.ok().build();
     }
 
     @PreAuthorize(ADMIN_OR_MANAGER)
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<TermDTO>> findById(@PathVariable Long id) {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<TermDTO>builder()
-                        .success(true)
-                        .message("course.creation.success")
-                        .data(termMapper.toDto(termService.findById(id)))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+    public ResponseEntity<TermDTO> findById(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(termMapper.toDto(termService.findById(id)));
     }
 
-    @PreAuthorize(ADMIN_OR_MANAGER)
+    @PreAuthorize(ADMIN)
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TermDTO>>> findAll() {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<List<TermDTO>>builder()
-                        .success(true)
-                        .message("courses.get.success")
-                        .data(termService.findAll().stream()
+    public ResponseEntity<List<TermDTO>> findAll() {
+        return ResponseEntity.status(HttpStatus.OK).body(termService.findAll().stream()
                                 .map(termMapper::toDto)
-                                .toList())
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+                                .toList());
     }
 
     @PreAuthorize(ALL_AUTHENTICATED)
     @GetMapping("/academic-calender/{termId}")
-    public ResponseEntity<ApiResponse<AcademicCalenderDTO>> findTermCalender(@PathVariable Long termId) {
+    public ResponseEntity<AcademicCalenderDTO> findTermCalender(@PathVariable Long termId) {
         termService.findTermCalenderByTermId(termId);
         return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<AcademicCalenderDTO>builder()
-                        .success(true)
-                        .message("calender.get.success")
-                        .data(calenderMapper.toDto(termService.findTermCalenderByTermId(termId)))
-                        .build()
-
+                calenderMapper.toDto(termService.findTermCalenderByTermId(termId))
         );
     }
 }

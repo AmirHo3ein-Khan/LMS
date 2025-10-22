@@ -68,6 +68,7 @@ class OfferedCourseIntegrationTest {
         Term term = createTerm(major,calender , Semester.FALL);
 
         OfferedCourseDTO dto = OfferedCourseDTO.builder()
+                .dayOfWeek(DayOfWeek.FRIDAY)
                 .classStartTime(LocalTime.now())
                 .classEndTime(LocalTime.now().plusHours(1))
                 .capacity(20)
@@ -95,6 +96,7 @@ class OfferedCourseIntegrationTest {
         Term term = createTerm(major,calender , Semester.FALL);
 
         OfferedCourseDTO dto = OfferedCourseDTO.builder()
+                .dayOfWeek(DayOfWeek.FRIDAY)
                 .classStartTime(LocalTime.now())
                 .classEndTime(LocalTime.now().plusHours(1))
                 .dayOfWeek(DayOfWeek.FRIDAY)
@@ -142,6 +144,7 @@ class OfferedCourseIntegrationTest {
         Term term = createTerm(major,calender , Semester.FALL);
 
         OfferedCourseDTO dto = OfferedCourseDTO.builder()
+                .dayOfWeek(DayOfWeek.FRIDAY)
                 .capacity(20)
                 .classLocation("Tehran")
                 .courseId(course.getId())
@@ -168,6 +171,7 @@ class OfferedCourseIntegrationTest {
         Term term = createTerm(major,calender , Semester.FALL);
 
         OfferedCourseDTO dto = OfferedCourseDTO.builder()
+                .dayOfWeek(DayOfWeek.FRIDAY)
                 .classEndTime(LocalTime.now())
                 .classStartTime(LocalTime.now().plusHours(1))
                 .capacity(20)
@@ -197,6 +201,7 @@ class OfferedCourseIntegrationTest {
         OfferedCourse offeredCourse = createOfferedCourse(course, term);
 
         OfferedCourseDTO dto = OfferedCourseDTO.builder()
+                .dayOfWeek(DayOfWeek.FRIDAY)
                 .classStartTime(LocalTime.now())
                 .classEndTime(LocalTime.now().plusHours(1))
                 .capacity(20)
@@ -225,6 +230,7 @@ class OfferedCourseIntegrationTest {
         Term term = createTerm(major,calender , Semester.FALL);
 
         OfferedCourseDTO dto = OfferedCourseDTO.builder()
+                .dayOfWeek(DayOfWeek.FRIDAY)
                 .classStartTime(LocalTime.now())
                 .classEndTime(LocalTime.now().plusHours(1))
                 .capacity(20)
@@ -256,6 +262,7 @@ class OfferedCourseIntegrationTest {
         OfferedCourse offeredCourse = createOfferedCourse(course, term);
 
         OfferedCourseDTO dto = OfferedCourseDTO.builder()
+                .dayOfWeek(DayOfWeek.FRIDAY)
                 .classStartTime(LocalTime.now())
                 .classEndTime(LocalTime.now().plusHours(1))
                 .capacity(20)
@@ -341,12 +348,11 @@ class OfferedCourseIntegrationTest {
         mockMvc.perform(get("/api/offeredCourse/teacher-courses")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
-                .andExpect(jsonPath("$.data[0].courseTitle").value(offeredCourses.get(0).getCourse().getTitle()))
-                .andExpect(jsonPath("$.data[1].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
-                .andExpect(jsonPath("$.data[1].courseTitle").value(offeredCourses.get(1).getCourse().getTitle()));
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$.[0].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
+                .andExpect(jsonPath("$.[0].courseTitle").value(offeredCourses.get(0).getCourse().getTitle()))
+                .andExpect(jsonPath("$.[1].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
+                .andExpect(jsonPath("$.[1].courseTitle").value(offeredCourses.get(1).getCourse().getTitle()));
     }
 
     @Test
@@ -373,12 +379,11 @@ class OfferedCourseIntegrationTest {
         mockMvc.perform(get("/api/offeredCourse/student-courses")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
-                .andExpect(jsonPath("$.data[0].courseTitle").value(offeredCourses.get(0).getCourse().getTitle()))
-                .andExpect(jsonPath("$.data[1].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
-                .andExpect(jsonPath("$.data[1].courseTitle").value(offeredCourses.get(1).getCourse().getTitle()));
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$.[0].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
+                .andExpect(jsonPath("$.[0].courseTitle").value(offeredCourses.get(0).getCourse().getTitle()))
+                .andExpect(jsonPath("$.[1].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
+                .andExpect(jsonPath("$.[1].courseTitle").value(offeredCourses.get(1).getCourse().getTitle()));
     }
 
 
@@ -413,12 +418,11 @@ class OfferedCourseIntegrationTest {
         mockMvc.perform(get("/api/offeredCourse/term-courses/"+term.getId())
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
-                .andExpect(jsonPath("$.data[0].courseTitle").value(course1.getTitle()))
-                .andExpect(jsonPath("$.data[1].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
-                .andExpect(jsonPath("$.data[1].courseTitle").value(course2.getTitle()));
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$.[0].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
+                .andExpect(jsonPath("$.[0].courseTitle").value(course1.getTitle()))
+                .andExpect(jsonPath("$.[1].teacherName").value(teacher.getFirstName() + " " + teacher.getLastName()))
+                .andExpect(jsonPath("$.[1].courseTitle").value(course2.getTitle()));
     }
 
     @Test

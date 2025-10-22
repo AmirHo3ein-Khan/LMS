@@ -23,12 +23,8 @@ import java.util.List;
 @DiscriminatorColumn(name = "question_type", discriminatorType = DiscriminatorType.STRING)
 public class Question extends BaseEntity<Long> {
 
-    @NotBlank(message = "Title cannot be empty")
-    @NotNull(message = "Title cannot be null")
     private String title;
 
-    @NotBlank(message = "Question text cannot be empty")
-    @NotNull(message = "Question text cannot be null")
     private String questionText;
 
     private double defaultScore;

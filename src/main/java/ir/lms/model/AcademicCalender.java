@@ -28,8 +28,4 @@ public class AcademicCalender extends BaseEntity<Long> {
     private LocalDate classesStartDate;
 
     private LocalDate classesEndDate;
-
-
-
-
 }

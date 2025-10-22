@@ -29,64 +29,35 @@ public class MajorController {
 
     @PreAuthorize(ADMIN)
     @PostMapping
-    public ResponseEntity<ApiResponse<MajorDTO>> save(@Valid @RequestBody MajorDTO dto) {
+    public ResponseEntity<MajorDTO> save(@Valid @RequestBody MajorDTO dto) {
         Major major = majorService.persist(majorMapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<MajorDTO>builder()
-                        .success(true)
-                        .message("major.creation.success")
-                        .data(majorMapper.toDto(major))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(majorMapper.toDto(major));
     }
 
     @PreAuthorize(ADMIN)
     @PutMapping("/{majorId}")
-    public ResponseEntity<ApiResponse<MajorDTO>> update(@PathVariable Long majorId,@Valid @RequestBody MajorDTO dto) {
+    public ResponseEntity<MajorDTO> update(@PathVariable Long majorId, @Valid @RequestBody MajorDTO dto) {
         Major updated = majorService.update(majorId, majorMapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<MajorDTO>builder()
-                        .success(true)
-                        .message("major.update.success")
-                        .data(majorMapper.toDto(updated))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+        return ResponseEntity.status(HttpStatus.OK).body(majorMapper.toDto(updated));
     }
 
     @PreAuthorize(ADMIN)
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         majorService.delete(id);
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(new ApiResponseDTO("Major deleted success.", true));
+        return ResponseEntity.ok().build();
     }
 
     @PreAuthorize(ADMIN)
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<MajorDTO>> findById(@PathVariable Long id) {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<MajorDTO>builder()
-                        .success(true)
-                        .message("major.get.success")
-                        .data(majorMapper.toDto(majorService.findById(id)))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+    public ResponseEntity<MajorDTO> findById(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(majorMapper.toDto(majorService.findById(id)));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<MajorDTO>>> findAll() {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<List<MajorDTO>>builder()
-                        .success(true)
-                        .message("majors.get.success")
-                        .data(majorService.findAll().stream()
-                                .map(majorMapper::toDto)
-                                .toList())
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+    public ResponseEntity<List<MajorDTO>> findAll() {
+        return ResponseEntity.status(HttpStatus.OK).body(majorService.findAll().stream()
+                .map(majorMapper::toDto)
+                .toList());
     }
 }

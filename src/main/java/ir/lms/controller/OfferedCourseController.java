@@ -36,111 +36,62 @@ public class OfferedCourseController {
 
     @PreAuthorize(ADMIN_OR_MANAGER)
     @PostMapping
-    public ResponseEntity<ApiResponse<ResponseOfferedCourseDTO>> create(@Valid  @RequestBody OfferedCourseDTO dto) {
+    public ResponseEntity<ResponseOfferedCourseDTO> create(@Valid  @RequestBody OfferedCourseDTO dto) {
         OfferedCourse offeredCourse = offeredCourseService.persist(mapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<ResponseOfferedCourseDTO>builder()
-                        .success(true)
-                        .message("offered.course.creation.success")
-                        .data(respMapper.toDto(offeredCourse))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(respMapper.toDto(offeredCourse));
     }
 
     @PreAuthorize(ADMIN_OR_MANAGER)
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ResponseOfferedCourseDTO>> update(@PathVariable Long id,@Valid @RequestBody OfferedCourseDTO dto) {
+    public ResponseEntity<ResponseOfferedCourseDTO> update(@PathVariable Long id,@Valid @RequestBody OfferedCourseDTO dto) {
         OfferedCourse updated = offeredCourseService.update(id, mapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<ResponseOfferedCourseDTO>builder()
-                        .success(true)
-                        .message("offered.course.update.success")
-                        .data(respMapper.toDto(updated))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+        return ResponseEntity.status(HttpStatus.OK).body(respMapper.toDto(updated));
     }
 
     @PreAuthorize(ADMIN_OR_MANAGER)
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         offeredCourseService.delete(id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Course.deleted.success." , true));
+        return ResponseEntity.ok().build();
     }
 
     @PreAuthorize(ADMIN_OR_MANAGER)
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ResponseOfferedCourseDTO>> findById(@PathVariable Long id) {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<ResponseOfferedCourseDTO>builder()
-                        .success(true)
-                        .message("offered.course.get.success")
-                        .data(respMapper.toDto(offeredCourseService.findById(id)))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+    public ResponseEntity<ResponseOfferedCourseDTO> findById(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(respMapper.toDto(offeredCourseService.findById(id)));
     }
 
     @PreAuthorize(ADMIN_OR_MANAGER)
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ResponseOfferedCourseDTO>>> findAll() {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<List<ResponseOfferedCourseDTO>>builder()
-                        .success(true)
-                        .message("offered.courses.get.success")
-                        .data(offeredCourseService.findAll().stream()
+    public ResponseEntity<List<ResponseOfferedCourseDTO>> findAll() {
+        return ResponseEntity.status(HttpStatus.OK).body(offeredCourseService.findAll().stream()
                                 .map(respMapper::toDto)
-                                .toList())
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+                                .toList());
     }
 
 
     @PreAuthorize(TEACHER)
     @GetMapping("/teacher-courses")
-    public ResponseEntity<ApiResponse<List<ResponseOfferedCourseDTO>>> findAllTeacherCourses(Principal principal) {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<List<ResponseOfferedCourseDTO>>builder()
-                        .success(true)
-                        .message("offered.courses.get.success")
-                        .data(offeredCourseService.findAllTeacherCourse(principal).stream()
+    public ResponseEntity<List<ResponseOfferedCourseDTO>> findAllTeacherCourses(Principal principal) {
+        return ResponseEntity.status(HttpStatus.OK).body(offeredCourseService.findAllTeacherCourse(principal).stream()
                                 .map(respMapper::toDto)
-                                .toList())
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+                                .toList());
     }
 
     @PreAuthorize(STUDENT)
     @GetMapping("/student-courses")
-    public ResponseEntity<ApiResponse<List<ResponseOfferedCourseDTO>>> findAllStudentCourses(Principal principal) {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<List<ResponseOfferedCourseDTO>>builder()
-                        .success(true)
-                        .message("offered.courses.get.success")
-                        .data(offeredCourseService.findAllStudentCourses(principal).stream()
+    public ResponseEntity<List<ResponseOfferedCourseDTO>> findAllStudentCourses(Principal principal) {
+        return ResponseEntity.status(HttpStatus.OK).body(offeredCourseService.findAllStudentCourses(principal).stream()
                                 .map(respMapper::toDto)
-                                .toList())
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+                                .toList());
     }
 
     @PreAuthorize(ALL_AUTHENTICATED)
     @GetMapping("/term-courses/{termId}")
-    public ResponseEntity<ApiResponse<List<ResponseOfferedCourseDTO>>> findAllTermCourses(@PathVariable Long termId, Principal principal) {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<List<ResponseOfferedCourseDTO>>builder()
-                        .success(true)
-                        .message("courses.get.success")
-                        .data(offeredCourseService.findAllTermCourses(termId , principal).stream()
+    public ResponseEntity<List<ResponseOfferedCourseDTO>> findAllTermCourses(@PathVariable Long termId, Principal principal) {
+        return ResponseEntity.status(HttpStatus.OK).body(offeredCourseService.findAllTermCourses(termId , principal).stream()
                                 .map(respMapper::toDto)
-                                .toList())
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+                                .toList());
     }
 
 }

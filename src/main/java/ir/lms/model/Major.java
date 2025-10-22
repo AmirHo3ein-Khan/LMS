@@ -23,8 +23,6 @@ import java.util.UUID;
 @SuperBuilder
 public class Major extends BaseEntity<Long> {
 
-    @NotBlank(message = "Major cannot be empty")
-    @NotNull(message = "Major cannot be null")
     @Column(unique = true)
     private String majorName;
 

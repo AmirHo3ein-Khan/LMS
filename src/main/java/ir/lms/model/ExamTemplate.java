@@ -23,18 +23,12 @@ import java.util.List;
 @SuperBuilder
 public class ExamTemplate extends BaseEntity<Long> {
 
-    @Size(max = 20, message = "title should not more than 50 character!")
-    @NotNull(message = "title cannot be null")
     private String title;
 
-    @Size(max = 50, message = "description should not more than 50 character!")
-    @NotNull(message = "description cannot be null")
     private String description;
 
-    @NotNull(message = "Exam start date cannot be null")
     private Instant examStartTime;
 
-    @NotNull(message = "Exam start time cannot be null")
     private Instant examEndTime;
 
     @Enumerated(EnumType.STRING)

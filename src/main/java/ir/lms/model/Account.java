@@ -26,15 +26,8 @@ public class Account extends BaseEntity<Long> {
     private UUID authId;
 
     @Column(unique = true)
-    @NotBlank(message = "Username cannot be empty")
-    @NotNull(message = "Username cannot be null")
-    @Size(min = 6, max = 20, message = "Username must be between 3 and 20 characters")
     private String username;
 
-
-    @NotNull(message = "Password cannot be null")
-    @NotBlank(message = "Password cannot be empty")
-    @Size(min = 8 ,message = "Password must be at least 8 characters")
     private String password;
 
     @Enumerated(EnumType.STRING)

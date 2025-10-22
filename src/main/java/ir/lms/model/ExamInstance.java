@@ -20,8 +20,6 @@ import java.util.List;
 @NoArgsConstructor
 @SuperBuilder
 public class ExamInstance extends BaseEntity<Long> {
-
-    @NotNull(message = "Start date of exam for student cannot be null")
     private LocalDateTime startAt;
 
     private LocalDateTime endAt;

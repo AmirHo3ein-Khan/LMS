@@ -187,9 +187,7 @@ class AuthIntegrationTest {
 
         mockMvc.perform(post("/auth/logout")
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.success").value(true))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("user.logout.success"));
+                .andExpect(status().isOk());
     }
 
     @Test

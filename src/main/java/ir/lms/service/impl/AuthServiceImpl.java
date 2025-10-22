@@ -1,7 +1,6 @@
 package ir.lms.service.impl;
 
 import ir.lms.util.dto.AuthRequestDTO;
-import ir.lms.util.dto.AuthResponseDTO;
 import ir.lms.exception.AccessDeniedException;
 import ir.lms.exception.EntityNotFoundException;
 import ir.lms.model.*;
@@ -9,6 +8,7 @@ import ir.lms.model.enums.RegisterState;
 import ir.lms.repository.*;
 import ir.lms.service.AuthService;
 import ir.lms.config.JwtService;
+import ir.lms.util.dto.AuthenticationResponse;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -37,7 +37,7 @@ public class AuthServiceImpl implements AuthService {
 
 
     @Override
-    public AuthResponseDTO login(AuthRequestDTO request) {
+    public AuthenticationResponse login(AuthRequestDTO request) {
         final Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
@@ -59,9 +59,8 @@ public class AuthServiceImpl implements AuthService {
 
             final String refreshToken = jwtService.generateRefreshToken(account.getAuthId());
 
-            return AuthResponseDTO.builder().accessToken(token)
-                    .refreshToken(refreshToken).tokenType("Barrier ")
-                    .activeRole(account.getActiveRole().getName()).build();
+            return AuthenticationResponse.builder().accessToken(token)
+                    .refreshToken(refreshToken).tokenType("Barrier ").build();
         }
 
         throw new AccessDeniedException("You don't have access. Your Account not active!");

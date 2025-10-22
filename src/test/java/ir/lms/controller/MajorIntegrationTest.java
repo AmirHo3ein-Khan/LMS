@@ -103,7 +103,7 @@ class MajorIntegrationTest {
                         .content(objectMapper.writeValueAsString(request))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.majorName").value(request.getMajorName()));
+                .andExpect(jsonPath("$.majorName").value(request.getMajorName()));
     }
 
 
@@ -121,7 +121,7 @@ class MajorIntegrationTest {
                         .content(objectMapper.writeValueAsString(request1))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.majorName").value(request1.getMajorName()));
+                .andExpect(jsonPath("$.majorName").value(request1.getMajorName()));
         mockMvc.perform(post("/api/major")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request2))
@@ -144,7 +144,7 @@ class MajorIntegrationTest {
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.majorName").value(updateRequest.getMajorName()));
+                .andExpect(jsonPath("$.majorName").value(updateRequest.getMajorName()));
     }
 
     @Test
@@ -175,7 +175,7 @@ class MajorIntegrationTest {
                         .content(objectMapper.writeValueAsString(updateRequest))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.majorName").value(updateRequest.getMajorName()));
+                .andExpect(jsonPath("$.majorName").value(updateRequest.getMajorName()));
 
         Major newMajor = majorRepository.save(
                 Major.builder().majorName("Computer-222").build()
@@ -218,7 +218,7 @@ class MajorIntegrationTest {
         mockMvc.perform(get("/api/major/{id}", saved.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.majorName").value(saved.getMajorName()));
+                .andExpect(jsonPath("$.majorName").value(saved.getMajorName()));
     }
 
     @Test
@@ -243,7 +243,7 @@ class MajorIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.[*].majorName", containsInAnyOrder(
+                .andExpect(jsonPath("$[*].majorName", containsInAnyOrder(
                         "Computer",
                         m1.getMajorName(),
                         m2.getMajorName()

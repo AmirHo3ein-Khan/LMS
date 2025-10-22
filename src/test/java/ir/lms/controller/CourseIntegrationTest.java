@@ -67,7 +67,7 @@ class CourseIntegrationTest {
                         .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.title").value(dto.getTitle()));
+                .andExpect(jsonPath("$.title").value(dto.getTitle()));
     }
 
     @Test
@@ -139,7 +139,7 @@ class CourseIntegrationTest {
                         .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.title").value("New Title"));
+                .andExpect(jsonPath("$.title").value("New Title"));
     }
 
     @Test
@@ -190,7 +190,7 @@ class CourseIntegrationTest {
         mockMvc.perform(get("/api/course/" + course.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.title").value("Find Me"));
+                .andExpect(jsonPath("$.title").value("Find Me"));
     }
 
     @Test

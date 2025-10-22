@@ -37,7 +37,6 @@ public class PersonController {
 
     private static final String ADMIN = "hasRole('ADMIN')";
     private static final String STUDENT = "hasRole('STUDENT')";
-    private static final String TEACHER = "hasRole('TEACHER')";
     private static final String ALL_AUTHENTICATED = "hasAnyRole('ADMIN','MANAGER','STUDENT','TEACHER','USER')";
     private static final String ADMIN_OR_MANAGER = "hasAnyRole('ADMIN','MANAGER')";
 
@@ -45,90 +44,62 @@ public class PersonController {
 
     @PreAuthorize(ADMIN_OR_MANAGER)
     @PostMapping("/teacher-register")
-    public ResponseEntity<ApiResponse<PersonDTO>> teacherRegister(@Valid  @RequestBody PersonDTO request) {
+    public ResponseEntity<PersonDTO> teacherRegister(@Valid  @RequestBody PersonDTO request) {
         Person person = personService.persist(personMapper.toEntity(request));
         personService.addRoleToPerson("teacher" , person.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<PersonDTO>builder()
-                        .success(true)
-                        .message("Register.success")
-                        .data(personMapper.toDto(person))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(personMapper.toDto(person));
     }
 
     @PreAuthorize(ADMIN)
     @PostMapping("/manager-register")
-    public ResponseEntity<ApiResponse<PersonDTO>> managerRegister(@Valid @RequestBody PersonDTO request) {
+    public ResponseEntity<PersonDTO> managerRegister(@Valid @RequestBody PersonDTO request) {
         Person person = personService.persist(personMapper.toEntity(request));
         personService.addRoleToPerson("manager" , person.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<PersonDTO>builder()
-                        .success(true)
-                        .message("Register.success")
-                        .data(personMapper.toDto(person))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(personMapper.toDto(person));
     }
 
     @PreAuthorize(ADMIN)
     @PostMapping("/add/person-role")
-    public ResponseEntity<ApiResponseDTO> addRoleToPerson(@Valid @RequestBody AddRoleRequest request) {
+    public ResponseEntity<Void> addRoleToPerson(@Valid @RequestBody AddRoleRequest request) {
         personService.addRoleToPerson(request.getRole() , request.getPersonId());
-        return ResponseEntity.ok(new ApiResponseDTO("Add role success", true));
+        return ResponseEntity.ok().build();
     }
 
 
     @PreAuthorize(ALL_AUTHENTICATED)
     @PostMapping("/change-role")
-    public ResponseEntity<ApiResponseDTO> changeRole(@Valid @RequestBody ChangeRoleRequestDTO request, Principal principal) {
+    public ResponseEntity<Void> changeRole(@Valid @RequestBody ChangeRoleRequestDTO request, Principal principal) {
         personService.changeRole(principal.getName(), request.getRole());
-        return ResponseEntity.ok(new ApiResponseDTO("Change role success", true));
+        return ResponseEntity.ok().build();
     }
 
     @PreAuthorize(ALL_AUTHENTICATED)
     @GetMapping("/person-roles")
-    public ResponseEntity<ApiResponse<List<String>>> getRoles(Principal principal) {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<List<String>>builder()
-                        .success(true)
-                        .message("roles.get.success")
-                        .data(personService.getPersonRoles(principal).stream()
+    public ResponseEntity<List<String>> getRoles(Principal principal) {
+        return ResponseEntity.status(HttpStatus.OK).body(personService.getPersonRoles(principal).stream()
                                 .map(Role::getName)
-                                .toList())
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+                                .toList());
     }
 
     @PreAuthorize(ALL_AUTHENTICATED)
     @PutMapping("/update-profile")
-    public ResponseEntity<ApiResponseDTO> updateProfile(@RequestBody UpdateProfileDTO dto, Principal principal) {
+    public ResponseEntity<Void> updateProfile(@RequestBody UpdateProfileDTO dto, Principal principal) {
         personService.updateProfile(profileMapper.toEntity(dto), principal);
-        return ResponseEntity.ok(new ApiResponseDTO("Update profile success", true));
+        return ResponseEntity.ok().build();
     }
 
     @PreAuthorize(ADMIN)
     @GetMapping("/search/{keyword}")
-    public ResponseEntity<ApiResponse<List<PersonDTO>>> search(@PathVariable String keyword) {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<List<PersonDTO>>builder()
-                        .success(true)
-                        .message("roles.get.success")
-                        .data(personService.search(keyword).stream()
+    public ResponseEntity<List<PersonDTO>> search(@PathVariable String keyword) {
+        return ResponseEntity.status(HttpStatus.OK).body(personService.search(keyword).stream()
                                 .map(personMapper::toDto)
-                                .toList())
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+                                .toList());
     }
 
     @PreAuthorize(STUDENT)
     @PostMapping("/take-course/{courseId}")
-    public ResponseEntity<ApiResponseDTO> studentGetCourse(@PathVariable Long courseId, Principal principal) {
+    public ResponseEntity<Void> studentGetCourse(@PathVariable Long courseId, Principal principal) {
         studentService.studentTakeCourse(courseId, principal);
-        return ResponseEntity.ok(new ApiResponseDTO("Course get success.", true));
+        return ResponseEntity.ok().build();
     }
 }

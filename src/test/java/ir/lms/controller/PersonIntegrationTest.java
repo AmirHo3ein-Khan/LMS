@@ -397,11 +397,9 @@ class PersonIntegrationTest {
         mockMvc.perform(get("/api/person/search/{keyword}", "Alice")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].firstName").value("Alice"))
-                .andExpect(jsonPath("$.data[0].lastName").value("Smith"));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$.[0].firstName").value("Alice"))
+                .andExpect(jsonPath("$.[0].lastName").value("Smith"));
     }
 
 

@@ -25,40 +25,28 @@ public class AuthController {
     }
 
     @PostMapping("/student-register")
-    public ResponseEntity<ApiResponse<PersonDTO>> studentRegister(@Valid @RequestBody PersonDTO request) {
+    public ResponseEntity<PersonDTO> studentRegister(@Valid @RequestBody PersonDTO request) {
         Person person = personService.persist(personMapper.toEntity(request));
         personService.addRoleToPerson("student" , person.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<PersonDTO>builder()
-                        .success(true)
-                        .message("Register.success")
-                        .data(personMapper.toDto(person))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+                personMapper.toDto(person));
     }
 
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@Valid  @RequestBody AuthRequestDTO request) {
-        AuthResponseDTO login = authService.login(request);
+    public ResponseEntity<AuthenticationResponse> login(@Valid  @RequestBody AuthRequestDTO request) {
+        AuthenticationResponse login = authService.login(request);
         return ResponseEntity.status(HttpStatus.OK).body(login);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<String>> logout(@RequestHeader(value = "Authorization", required = false) String authorizeRequest) {
+    public ResponseEntity<Void> logout(@RequestHeader(value = "Authorization", required = false) String authorizeRequest) {
         String token = null;
         if (authorizeRequest != null && authorizeRequest.startsWith("Bearer ")) {
             token = authorizeRequest.substring(7);
         }
         authService.logOut(token);
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<String>builder()
-                        .success(true)
-                        .timestamp(Instant.now().toString())
-                        .message("user.logout.success")
-                        .build()
-        );
+        return ResponseEntity.ok().build();
     }
 
 

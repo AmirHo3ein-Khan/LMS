@@ -1,13 +1,15 @@
 package ir.lms.controller;
 
 import ir.lms.service.PersonService;
-import ir.lms.util.dto.ApiResponseDTO;
+import ir.lms.util.dto.ApiResponse;
 import ir.lms.util.dto.ChangePassDTO;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.Instant;
 
 @RestController
 @RequestMapping("/api/account")
@@ -24,24 +26,25 @@ public class AccountController {
 
     @PreAuthorize(ALL_AUTHENTICATED)
     @PutMapping("/change-pass")
-    public ResponseEntity<ApiResponseDTO> changePassword(@RequestBody ChangePassDTO dto, Principal principal) {
+    public ResponseEntity<Void> changePassword(@RequestBody ChangePassDTO dto, Principal principal) {
         personService.changePassword(dto, principal);
-        return ResponseEntity.ok(new ApiResponseDTO("Change password success", true));
+        return ResponseEntity.ok().build();
+
     }
 
     @PreAuthorize(ADMIN)
     @PostMapping("/active-account/{id}")
-    public ResponseEntity<ApiResponseDTO> activeAccount(@PathVariable Long id) {
+    public ResponseEntity<Void> activeAccount(@PathVariable Long id) {
         personService.activeAccount(id);
-        return ResponseEntity.ok(new ApiResponseDTO("user active successfully." , true));
+        return ResponseEntity.ok().build();
     }
 
 
     @PreAuthorize(ADMIN)
     @PostMapping("/inactive-account/{id}")
-    public ResponseEntity<ApiResponseDTO> inactiveAccount(@PathVariable Long id) {
+    public ResponseEntity<Void> inactiveAccount(@PathVariable Long id) {
         personService.inactiveAccount(id);
-        return ResponseEntity.ok(new ApiResponseDTO("user inactive successfully." , true));
+        return ResponseEntity.ok().build();
     }
 
 }

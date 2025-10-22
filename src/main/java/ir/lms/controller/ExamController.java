@@ -42,114 +42,81 @@ public class ExamController {
 
     @PreAuthorize(TEACHER)
     @PostMapping
-    public ResponseEntity<ApiResponse<ExamDTO>> save(@Valid @RequestBody ExamDTO dto) {
+    public ResponseEntity<ExamDTO> save(@Valid @RequestBody ExamDTO dto) {
         ExamTemplate exam = examService.persist(examMapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<ExamDTO>builder()
-                        .success(true)
-                        .message("exam.creation.success")
-                        .data(examMapper.toDto(exam))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(examMapper.toDto(exam));
     }
 
     @PreAuthorize(TEACHER)
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ExamDTO>> update(@PathVariable Long id,@Valid @RequestBody ExamDTO dto) {
+    public ResponseEntity<ExamDTO> update(@PathVariable Long id,@Valid @RequestBody ExamDTO dto) {
         ExamTemplate updated = examService.update(id, examMapper.toEntity(dto));
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<ExamDTO>builder()
-                        .success(true)
-                        .message("exam.update.success")
-                        .data(examMapper.toDto(updated))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+        return ResponseEntity.status(HttpStatus.OK).body(examMapper.toDto(updated));
     }
 
     @PreAuthorize(TEACHER)
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDTO> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         examService.delete(id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Exam deleted success." , true));
+        return ResponseEntity.ok().build();
     }
 
     @PreAuthorize(TEACHER)
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ExamDTO>> findById(@PathVariable Long id) {
-        return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<ExamDTO>builder()
-                        .success(true)
-                        .message("exam.get.success")
-                        .data(examMapper.toDto(examService.findById(id)))
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+    public ResponseEntity<ExamDTO> findById(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(examMapper.toDto(examService.findById(id)));
     }
 
     @PreAuthorize(TEACHER)
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ExamDTO>>> findAll() {
+    public ResponseEntity<List<ExamDTO>> findAll() {
         return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<List<ExamDTO>>builder()
-                        .success(true)
-                        .message("exams.get.success")
-                        .data(examService.findAll().stream()
+                examService.findAll().stream()
                                 .map(examMapper::toDto)
-                                .toList())
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+                                .toList());
     }
 
     @PreAuthorize(TEACHER_OR_STUDENT)
     @GetMapping("/course-exams/{courseId}")
-    public ResponseEntity<ApiResponse<List<ExamDTO>>> findAllExamsOfACourse(@PathVariable Long courseId) {
+    public ResponseEntity<List<ExamDTO>> findAllExamsOfACourse(@PathVariable Long courseId) {
         return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.<List<ExamDTO>>builder()
-                        .success(true)
-                        .message("exams.get.success")
-                        .data(examService.findAllExamOfACourse(courseId).stream()
+                examService.findAllExamOfACourse(courseId).stream()
                                 .map(examMapper::toDto)
-                                .toList())
-                        .timestamp(Instant.now().toString())
-                        .build()
-        );
+                                .toList());
     }
 
     @PreAuthorize(STUDENT)
     @PostMapping("/start-exam/{examId}")
-    public ResponseEntity<ApiResponseDTO> studentStartExam(@PathVariable Long examId, Principal principal) {
+    public ResponseEntity<Void> studentStartExam(@PathVariable Long examId, Principal principal) {
         examService.startExam(examId, principal);
-        return ResponseEntity.ok(new ApiResponseDTO("Exam start success.", true));
+        return ResponseEntity.ok().build();
     }
 
     @PreAuthorize(STUDENT)
     @PostMapping("/submit-exam/{examId}")
-    public ResponseEntity<ApiResponseDTO> studentSubmitExam(@PathVariable Long examId, Principal principal) {
+    public ResponseEntity<Void> studentSubmitExam(@PathVariable Long examId, Principal principal) {
         examService.submitExam(examId, principal);
-        return ResponseEntity.ok(new ApiResponseDTO("Exam submit success.", true));
+        return ResponseEntity.ok().build();
     }
 
 
     @PreAuthorize(STUDENT)
     @PostMapping("/submit-answer")
-    public ResponseEntity<ApiResponseDTO> submitAnswer(@Valid  @RequestBody AnswerDTO answerDTO , Principal principal) {
+    public ResponseEntity<Void> submitAnswer(@Valid  @RequestBody AnswerDTO answerDTO , Principal principal) {
         Answer answer = answerMapper.toEntity(answerDTO , principal);
         Option option = new Option();
         if (answerDTO.getOptionId() != null) {
             option = answerService.findOptionById(answerDTO.getOptionId());
         }
         answerService.saveAnswer(answerDTO.getType() , answer, option, answerDTO.getAnswerText());
-        return ResponseEntity.ok(new ApiResponseDTO("Answer saved success.", true));
+        return ResponseEntity.ok().build();
     }
 
     @PreAuthorize(TEACHER)
     @PostMapping("/grading-descriptive")
-    public ResponseEntity<ApiResponseDTO> gradingDescriptiveQuestionOfExam(@RequestBody GradingDTO dto) {
+    public ResponseEntity<Void> gradingDescriptiveQuestionOfExam(@RequestBody GradingDTO dto) {
         gradingService.descriptiveGrading(dto.getExamId(), dto.getStudentId() , dto.getQuestionId() ,  dto.getScore());
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseDTO("Grading success", true));
+        return ResponseEntity.ok().build();
     }
 
 }

@@ -20,18 +20,12 @@ import java.util.List;
 @SuperBuilder
 public class Course extends BaseEntity<Long> {
 
-    @NotBlank(message = "title cannot be empty")
-    @NotNull(message = "title cannot be null")
     private String title;
 
     private boolean deleted;
 
-    @Min(value = 1, message = "Unit must be at least 1")
     private Integer unit;
 
-    @NotBlank(message = "title cannot be empty")
-    @NotNull(message = "title cannot be null")
-    @Size(max = 50, message = "description should not more than 50 character!")
     private String description;
 
     @ManyToOne

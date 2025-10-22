@@ -53,9 +53,16 @@ public class QuestionController {
 
     @PreAuthorize(TEACHER)
     @PostMapping("/assign-exam")
-    public ResponseEntity<ApiResponseDTO> assignQuestionToExam(@Valid @RequestBody ExamQuestionDTO dto) {
+    public ResponseEntity<ApiResponse<Void>> assignQuestionToExam(@Valid @RequestBody ExamQuestionDTO dto) {
         questionService.assignQuestionToExam(dto.getExamId(), dto.getQuestionId(), dto.getScore());
-        return ResponseEntity.ok(new ApiResponseDTO("Question added successfully.", true));
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<Void>builder()
+                        .success(true)
+                        .message("Question added successfully.")
+                        .data(null)
+                        .timestamp(Instant.now().toString())
+                        .build()
+        );
     }
 
 

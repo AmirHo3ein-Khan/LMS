@@ -10,6 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 public class CourseDTO {
 
+
     @NotBlank(message = "Course title cannot be empty")
     @Size(min = 3, max = 30, message = "Title must be between 3 and 30 characters")
     private String title;
@@ -18,10 +19,10 @@ public class CourseDTO {
     @Min(value = 1, message = "Unit must be at least 1")
     private Integer unit;
 
-    @Size(max = 50 , message = "description should not more than 50 character!")
+    @Size(max = 50, message = "Description should not exceed 50 characters")
     private String description;
 
-    @NotNull(message = "Unit cannot be empty")
+    @NotBlank(message = "Major name cannot be empty")
     private String majorName;
 }
 

@@ -55,10 +55,10 @@ class TermIntegrationTest {
     @Test
     void saveTerm() throws Exception {
         TermDTO termDTO = TermDTO.builder()
-                .courseRegistrationStart(LocalDate.of(2026, 11, 20))
-                .courseRegistrationEnd(LocalDate.of(2026, 11, 20))
-                .classesEndDate(LocalDate.of(2026, 11, 20))
-                .classesStartDate(LocalDate.of(2026, 11, 20))
+                .courseRegistrationStart(LocalDate.now())
+                .courseRegistrationEnd(LocalDate.now().plusDays(5))
+                .classesStartDate(LocalDate.now().plusDays(6))
+                .classesEndDate(LocalDate.now().plusDays(10))
                 .majorName("Computer")
                 .build();
 
@@ -186,10 +186,10 @@ class TermIntegrationTest {
     @Test
     void deleteTerm() throws Exception {
         Major major = getMajor("Computer");
-        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
-                LocalDate.of(2025, 11, 10),
-                LocalDate.of(2025, 11, 10),
-                LocalDate.of(2025, 11, 10));
+        AcademicCalender calender = createCalender(LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(5),
+                LocalDate.now().plusDays(6),
+                LocalDate.now().plusDays(10));
         Term term = createTerm(major,calender , Semester.FALL);
         mockMvc.perform(delete("/api/term/" + term.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -265,12 +265,10 @@ class TermIntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("calender.get.success"))
-                .andExpect(jsonPath("$.data.courseRegistrationStart").exists())
-                .andExpect(jsonPath("$.data.courseRegistrationEnd").exists())
-                .andExpect(jsonPath("$.data.classesStartDate").exists())
-                .andExpect(jsonPath("$.data.classesEndDate").exists());
+                .andExpect(jsonPath("$.courseRegistrationStart").exists())
+                .andExpect(jsonPath("$.courseRegistrationEnd").exists())
+                .andExpect(jsonPath("$.classesStartDate").exists())
+                .andExpect(jsonPath("$.classesEndDate").exists());
     }
 
     @Test
