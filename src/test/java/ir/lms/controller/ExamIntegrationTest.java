@@ -93,6 +93,56 @@ class ExamIntegrationTest {
     }
 
     @Test
+    void saveExam_ExamStartTime_And_ExamEndTime_Null_ShouldReturn_NOT_ACCEPTABLE() throws Exception {
+        ExamDTO dto = buildExamDTO(offeredCourse);
+        dto.setExamStartTime(null);
+        dto.setExamEndTime(null);
+
+        mockMvc.perform(post("/api/exam")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
+                .andExpect(status().isNotAcceptable());
+    }
+
+    @Test
+    void saveExam_ExamStartTimeIsAfterNow_ShouldReturn_NOT_ACCEPTABLE() throws Exception {
+        ExamDTO dto = buildExamDTO(offeredCourse);
+        dto.setExamStartTime(Instant.now().plusSeconds(10000));
+
+        mockMvc.perform(post("/api/exam")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
+                .andExpect(status().isNotAcceptable());
+    }
+
+    @Test
+    void saveExam_ExamEndTimeIsAfterNow_ShouldReturn_NOT_ACCEPTABLE() throws Exception {
+        ExamDTO dto = buildExamDTO(offeredCourse);
+        dto.setExamEndTime(Instant.now().plusSeconds(10000));
+
+        mockMvc.perform(post("/api/exam")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
+                .andExpect(status().isNotAcceptable());
+    }
+
+    @Test
+    void saveExam_ExamStartTimeIsBeforeExamEndTime_ShouldReturn_NOT_ACCEPTABLE() throws Exception {
+        ExamDTO dto = buildExamDTO(offeredCourse);
+        dto.setExamEndTime(Instant.parse("2025-12-23T11:00:00Z"));
+        dto.setExamStartTime(Instant.parse("2025-12-23T12:00:00Z"));
+
+        mockMvc.perform(post("/api/exam")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
+                .andExpect(status().isNotAcceptable());
+    }
+
+    @Test
     void updateExam() throws Exception {
         ExamTemplate exam = saveExam("Exam Title", "Exam Description");
 
@@ -112,6 +162,46 @@ class ExamIntegrationTest {
     }
 
     @Test
+    void updateExam_InvalidExamID_ShouldReturn_NOTFOUND() throws Exception {
+        ExamDTO dto = ExamDTO.builder()
+                .title("Exam Title2")
+                .description("Exam Description2")
+                .examStartTime(Instant.parse("2025-12-23T12:00:00Z"))
+                .examEndTime(Instant.parse("2025-12-23T13:00:00Z"))
+                .courseId(offeredCourse.getId())
+                .build();
+
+        mockMvc.perform(put("/api/exam/" + 999)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
+                .andExpect(status().isNotFound());
+    }
+
+
+    @Test
+    void updateExam_IsAfterExamStartTime_ShouldReturn_NOT_ACCEPTABLE() throws Exception {
+        ExamTemplate exam = saveExam("Exam Title", "Exam Description");
+
+        exam.setExamStartTime(Instant.parse("2025-10-10T12:00:00Z"));
+        exam.setExamEndTime(Instant.parse("2025-10-10T12:00:00Z"));
+
+        ExamDTO dto = ExamDTO.builder()
+                .title("Exam Title2")
+                .description("Exam Description2")
+                .examStartTime(Instant.parse("2025-10-10T12:00:00Z"))
+                .examEndTime(Instant.parse("2025-10-10T13:00:00Z"))
+                .courseId(offeredCourse.getId())
+                .build();
+
+        mockMvc.perform(put("/api/exam/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + teacherAccessToken))
+                .andExpect(status().isNotAcceptable());
+    }
+
+    @Test
     void deleteExam() throws Exception {
         ExamTemplate exam = saveExam("Exam Title", "Exam Description");
 
@@ -121,12 +211,26 @@ class ExamIntegrationTest {
     }
 
     @Test
+    void deleteExam_InvalidExamId_ShouldReturn_NOTFOUND() throws Exception {
+        mockMvc.perform(delete("/api/exam/" + 999)
+                        .header("Authorization", "Bearer " + teacherAccessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void findExamById() throws Exception {
         ExamTemplate exam = saveExam("Exam Title", "Exam Description");
 
         mockMvc.perform(get("/api/exam/" + exam.getId())
                         .header("Authorization", "Bearer " + teacherAccessToken))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void findExamById_InvalidExamId_ShouldReturn_NOTFOUND() throws Exception {
+        mockMvc.perform(get("/api/exam/" + 999)
+                        .header("Authorization", "Bearer " + teacherAccessToken))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -149,6 +253,16 @@ class ExamIntegrationTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void findAllExamsOfACourse_InvalidCourseId_ShouldReturn_NOTFOUND() throws Exception {
+        saveExam("Exam1", "Desc1");
+        saveExam("Exam2", "Desc2");
+
+        mockMvc.perform(get("/api/exam/course-exams/" + 999)
+                        .header("Authorization", "Bearer " + teacherAccessToken))
+                .andExpect(status().isNotFound());
+    }
+
 
     @Test
     void studentStartExam() throws Exception {
@@ -164,6 +278,101 @@ class ExamIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + studentAccessToken))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void studentStartExam_InvalidExamId_ShouldReturn_NOTFOUND() throws Exception {
+        mockMvc.perform(post("/api/exam/start-exam/" + 999)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void studentStartExam_AlreadyStartedTheExam_ShouldReturn_FORBIDDEN() throws Exception {
+        student.setOfferedCourses(List.of(offeredCourse));
+        ExamTemplate exam = createExam(offeredCourse);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
+
+        mockMvc.perform(post("/api/exam/start-exam/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/exam/submit-exam/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/exam/start-exam/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentStartExam_StudentDoNotHadTheCourse_shouldReturn_FORBIDDEN() throws Exception {
+        Role teacherRole = roleRepository.findByName("TEACHER").get();
+        Major major = majorRepository.findByMajorName("Computer").get();
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
+        Person teacher  = createPersonAndAccount("ali", "akbari", List.of(teacherRole), teacherRole, major);
+        OfferedCourse offeredCourse1 = createOfferedCourse(teacher, term, course);
+        student.setOfferedCourses(List.of(offeredCourse1));
+        ExamTemplate exam = createExam(offeredCourse);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
+
+        mockMvc.perform(post("/api/exam/start-exam/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentStartExam_ExamStateNotStarted_ShouldReturn_FORBIDDEN() throws Exception {
+        student.setOfferedCourses(List.of(offeredCourse));
+        ExamTemplate exam = createExam(offeredCourse);
+        exam.setExamState(ExamState.NOT_STARTED);
+        examRepository.save(exam);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
+
+        mockMvc.perform(post("/api/exam/start-exam/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentStartExam_ExamStateFinished_ShouldReturn_FORBIDDEN() throws Exception {
+        student.setOfferedCourses(List.of(offeredCourse));
+        ExamTemplate exam = createExam(offeredCourse);
+        exam.setExamState(ExamState.FINISHED);
+        examRepository.save(exam);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
+
+        mockMvc.perform(post("/api/exam/start-exam/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -186,23 +395,66 @@ class ExamIntegrationTest {
     }
 
     @Test
+    void studentSubmitExam_InvalidExamId_ShouldReturn_NOTFOUND() throws Exception {
+        mockMvc.perform(post("/api/exam/submit-exam/" + 999)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isNotFound());
+    }
+    @Test
+    void studentSubmitExam_StudentCompletedTheExam_ShouldReturn_FORBIDDEN() throws Exception {
+        ExamTemplate exam = createExam(offeredCourse);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+
+        ExamQuestion eq1 = examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        ExamQuestion eq2 = examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
+
+        ExamInstance instance = createExamInstance(student, exam);
+        testAnswerRepository.save(TestAnswer.builder().examInstance(instance).examQuestion(eq1).option(q1.getOptions().get(0)).score(eq1.getQuestionScore()).build());
+        descriptiveAnswerRepository.save(DescriptiveAnswer.builder().examInstance(instance).examQuestion(eq2).answerText("Answer Text").build());
+
+        instance.setStatus(ExamInstanceStatus.COMPLETED);
+        examInstanceRepository.save(instance);
+        mockMvc.perform(post("/api/exam/submit-exam/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void submitAnswer() throws Exception {
         ExamTemplate exam = createExam(offeredCourse);
         TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
 
         examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
         createExamInstance(student, exam);
 
-        AnswerDTO answerDTO = AnswerDTO.builder()
+        AnswerDTO tAnswerDTO = AnswerDTO.builder()
                 .examId(exam.getId())
                 .questionId(q1.getId())
                 .optionId(q1.getOptions().get(0).getId())
                 .type("test")
                 .build();
 
+        AnswerDTO dAnswerDTO = AnswerDTO.builder()
+                .examId(exam.getId())
+                .questionId(q2.getId())
+                .type("descriptive")
+                .answerText("Answer Text")
+                .build();
+
         mockMvc.perform(post("/api/exam/submit-answer")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(answerDTO))
+                        .content(objectMapper.writeValueAsString(tAnswerDTO))
+                        .header("Authorization", "Bearer " + studentAccessToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/exam/submit-answer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dAnswerDTO))
                         .header("Authorization", "Bearer " + studentAccessToken))
                 .andExpect(status().isOk());
     }

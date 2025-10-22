@@ -41,20 +41,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class MajorIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-    @Autowired
-    private ObjectMapper objectMapper;
-    @Autowired
-    private RoleRepository roleRepository;
-    @Autowired
-    private PersonRepository personRepository;
-    @Autowired
-    private AccountRepository accountRepository;
-    @Autowired
-    private MajorRepository majorRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private RoleRepository roleRepository;
+    @Autowired private PersonRepository personRepository;
+    @Autowired private AccountRepository accountRepository;
+    @Autowired private MajorRepository majorRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     private String accessToken;
 
@@ -113,6 +106,29 @@ class MajorIntegrationTest {
                 .andExpect(jsonPath("$.data.majorName").value(request.getMajorName()));
     }
 
+
+    @Test
+    void saveMajor_DuplicateName_ShouldReturn_CONFLICT() throws Exception {
+        MajorDTO request1 = MajorDTO.builder()
+                .majorName("Electronics11")
+                .build();
+        MajorDTO request2 = MajorDTO.builder()
+                .majorName("Electronics11")
+                .build();
+
+        mockMvc.perform(post("/api/major")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request1))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.majorName").value(request1.getMajorName()));
+        mockMvc.perform(post("/api/major")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request2))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isConflict());
+    }
+
     @Test
     void shouldUpdateMajorSuccessfully() throws Exception {
         Major existing = majorRepository.save(
@@ -132,6 +148,50 @@ class MajorIntegrationTest {
     }
 
     @Test
+    void updateMajor_InvalidMajorID_ShouldReturn_NOTFOUND() throws Exception {
+        MajorDTO updateRequest = MajorDTO.builder()
+                .majorName("Mechanic-" + UUID.randomUUID())
+                .build();
+
+        mockMvc.perform(put("/api/major/{id}", 999)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateMajor_WithExistedMajorName_ShouldReturn_CONFLICT() throws Exception {
+        Major existing = majorRepository.save(
+                Major.builder().majorName("Computer-111").build()
+        );
+
+        MajorDTO updateRequest = MajorDTO.builder()
+                .majorName("Mechanic-111")
+                .build();
+
+        mockMvc.perform(put("/api/major/{id}", existing.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.majorName").value(updateRequest.getMajorName()));
+
+        Major newMajor = majorRepository.save(
+                Major.builder().majorName("Computer-222").build()
+        );
+
+        MajorDTO updateNewMajor = MajorDTO.builder()
+                .majorName("Mechanic-111")
+                .build();
+        mockMvc.perform(put("/api/major/{id}", newMajor.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateNewMajor))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void shouldDeleteMajor() throws Exception {
         Major toDelete = majorRepository.save(
                 Major.builder().majorName("DeleteMe-" + UUID.randomUUID()).build()
@@ -140,6 +200,13 @@ class MajorIntegrationTest {
         mockMvc.perform(delete("/api/major/{id}", toDelete.getId())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void deleteMajor_InvalidMajorId_ShouldReturn_NOTFOUND() throws Exception {
+        mockMvc.perform(delete("/api/major/{id}", 999)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -152,6 +219,13 @@ class MajorIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.majorName").value(saved.getMajorName()));
+    }
+
+    @Test
+    void findMajorById_InvalidMajorId_ShouldReturn_NOTFOUND() throws Exception {
+        mockMvc.perform(get("/api/major/{id}", 999)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
     }
 
     @Test

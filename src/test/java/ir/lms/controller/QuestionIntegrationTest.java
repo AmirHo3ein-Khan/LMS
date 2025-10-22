@@ -60,9 +60,9 @@ class QuestionIntegrationTest {
     }
 
     @Test
-    void createQuestion() throws Exception {
+    void createTestQuestion() throws Exception {
         Major major = getMajor("Computer");
-        Course course = createCourse("course13", major);
+        Course course = createCourse("course22", major);
 
         QuestionDTO questionDTO = QuestionDTO.builder()
                 .questionType("test")
@@ -85,9 +85,42 @@ class QuestionIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated());
     }
+    @Test
+    void createDescriptiveQuestion() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course13", major);
+
+        QuestionDTO questionDTO = QuestionDTO.builder()
+                .questionType("Descriptive")
+                .questionText("question text")
+                .title("title")
+                .courseName(course.getTitle())
+                .majorName(major.getMajorName())
+                .defaultScore(2d)
+                .build();
+
+        mockMvc.perform(post("/api/question")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(questionDTO))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated());
+    }
 
     @Test
-    void assignQuestionToExam() throws Exception {
+    void createQuestion_UnknownQuestionType_ShouldReturn_NOT_ACCEPTABLE() throws Exception {
+        QuestionDTO questionDTO = QuestionDTO.builder()
+                .questionType("unknown")
+                .build();
+
+        mockMvc.perform(post("/api/question")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(questionDTO))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotAcceptable());
+    }
+
+    @Test
+    void assignQuestionToExamWithDefaultScore() throws Exception {
         Major major = getMajor("Computer");
         Course course = createCourse("course14", major);
         AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
@@ -102,7 +135,32 @@ class QuestionIntegrationTest {
         ExamQuestionDTO dto = ExamQuestionDTO.builder()
                 .examId(exam.getId())
                 .questionId(question.getId())
-                .score(2)
+                .build();
+
+        mockMvc.perform(post("/api/question/assign-exam")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void assignQuestionToExamWithAssignScore() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course14", major);
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
+        OfferedCourse offeredCourse = createOfferedCourse(term, course);
+        ExamTemplate exam = createExam(offeredCourse);
+        TestQuestion question = createTestQuestion(course);
+
+        ExamQuestionDTO dto = ExamQuestionDTO.builder()
+                .examId(exam.getId())
+                .questionId(question.getId())
+                .score(5)
                 .build();
 
         mockMvc.perform(post("/api/question/assign-exam")
@@ -135,6 +193,86 @@ class QuestionIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void findAllQuestionsOfExam_InvalidExamId_ShouldReturn_NOTFOUND() throws Exception {
+        mockMvc.perform(get("/api/question/exam-questions/" + 999)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void findAllQuestionsOfExam_ExamIsDeleted_ShouldReturn_NOTFOUND() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course15", major);
+        AcademicCalender calender = createCalender(LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10),
+                LocalDate.of(2025, 11, 10));
+        Term term = createTerm(major,calender , Semester.FALL);
+        OfferedCourse offeredCourse = createOfferedCourse(term, course);
+        ExamTemplate exam = createExam(offeredCourse);
+        exam.setDeleted(true);
+        examRepository.save(exam);
+
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q1).questionScore(5).build());
+        examQuestionRepository.save(ExamQuestion.builder().exam(exam).question(q2).questionScore(5).build());
+
+        mockMvc.perform(get("/api/question/exam-questions/" + exam.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void findAllQuestionsOfCourse() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course15", major);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+        course.setQuestions(Arrays.asList(q1, q2));
+        courseRepository.save(course);
+
+        mockMvc.perform(get("/api/question/course-questions/" + course.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void findAllQuestionsOfCourse_InvalidCourseId_ShouldReturn_NOTFOUND() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course15", major);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+        course.setQuestions(Arrays.asList(q1, q2));
+        courseRepository.save(course);
+
+        mockMvc.perform(get("/api/question/course-questions/" + course.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void findAllQuestionsOfCourse_CourseIsDeleted_ShouldReturn_NOTFOUND() throws Exception {
+        Major major = getMajor("Computer");
+        Course course = createCourse("course15", major);
+        course.setDeleted(true);
+        TestQuestion q1 = createTestQuestion(course);
+        DescriptiveQuestion q2 = createDescriptiveQuestion(course);
+        course.setQuestions(Arrays.asList(q1, q2));
+        courseRepository.save(course);
+        mockMvc.perform(get("/api/question/course-questions/" + course.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
 
 
     // ---------------- Helper Methods ----------------

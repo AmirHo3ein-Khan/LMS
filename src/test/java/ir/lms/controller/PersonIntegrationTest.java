@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -74,6 +75,25 @@ class PersonIntegrationTest {
     }
 
     @Test
+    void teacherRegister_DuplicateNationalCodeAndPhoneNumber_ShouldReturn_CONFLICT() throws Exception {
+        PersonDTO dto = buildPersonDTO();
+        mockMvc.perform(post("/api/person/teacher-register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated());
+
+        PersonDTO dto2 = buildPersonDTO();
+        dto2.setNationalCode(dto.getNationalCode());
+        dto2.setPhoneNumber(dto.getPhoneNumber());
+        mockMvc.perform(post("/api/person/teacher-register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto2))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void managerRegister() throws Exception {
         PersonDTO dto = buildPersonDTO();
         mockMvc.perform(post("/api/person/manager-register")
@@ -81,6 +101,25 @@ class PersonIntegrationTest {
                         .content(objectMapper.writeValueAsString(dto))
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void managerRegister_DuplicateNationalCodeAndPhoneNumber_ShouldReturn_CONFLICT() throws Exception {
+        PersonDTO dto = buildPersonDTO();
+        mockMvc.perform(post("/api/person/manager-register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated());
+
+        PersonDTO dto2 = buildPersonDTO();
+        dto2.setNationalCode(dto.getNationalCode());
+        dto2.setPhoneNumber(dto.getPhoneNumber());
+        mockMvc.perform(post("/api/person/manager-register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto2))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isConflict());
     }
 
 
@@ -94,6 +133,134 @@ class PersonIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+    }
+    @Test
+    void studentGetCourse_InvalidOfferedCourseId_ShouldReturn_NOTFOUND() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+        Role studentRole = roleRepository.findByName("STUDENT").get();
+        Person student = createPersonAndAccount("STUDENT", "STUDENT",List.of(studentRole) , studentRole , major);
+        String token = loginAndGetToken(student.getPhoneNumber(), student.getNationalCode());
+        mockMvc.perform(post("/api/person/take-course/" + 999)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void studentGetCourse_CalenderCourseRegistrationStartIsBeforeNow_ShouldReturn_FORBIDDEN() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+        Role studentRole = roleRepository.findByName("STUDENT").get();
+        Course course = createCourse("course16", major);
+        Role teacherRole = roleRepository.findByName("TEACHER").get();
+        Person teacher = createPersonAndAccount("Teacher", "Teacher",List.of(teacherRole) , teacherRole , major);
+        AcademicCalender calender = createCalender(
+                LocalDate.now().minusDays(1),
+                LocalDate.now().plusDays(1),
+                LocalDate.now() ,
+                LocalDate.now().plusDays(1));
+        Term term = createTerm(major ,calender , Semester.FALL);
+        offeredCourse = createOfferedCourse(teacher , term, course);
+        Person student = createPersonAndAccount("STUDENT", "STUDENT",List.of(studentRole) , studentRole , major);
+        String token = loginAndGetToken(student.getPhoneNumber(), student.getNationalCode());
+        mockMvc.perform(post("/api/person/take-course/" + offeredCourse.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentGetCourse_CalenderCourseRegistrationEndIsAfterNow_ShouldReturn_FORBIDDEN() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+        Role studentRole = roleRepository.findByName("STUDENT").get();
+        Course course = createCourse("course16", major);
+        Role teacherRole = roleRepository.findByName("TEACHER").get();
+        Person teacher = createPersonAndAccount("Teacher", "Teacher",List.of(teacherRole) , teacherRole , major);
+        AcademicCalender calender = createCalender(
+                LocalDate.now(),
+                LocalDate.now().plusDays(1),
+                LocalDate.now() ,
+                LocalDate.now().plusDays(1));
+        Term term = createTerm(major ,calender , Semester.FALL);
+        offeredCourse = createOfferedCourse(teacher , term, course);
+        Person student = createPersonAndAccount("STUDENT", "STUDENT",List.of(studentRole) , studentRole , major);
+        String token = loginAndGetToken(student.getPhoneNumber(), student.getNationalCode());
+        mockMvc.perform(post("/api/person/take-course/" + offeredCourse.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentGetCourse_TotalUnitsPlusCourseUnitBiggerThanLimit_ShouldReturn_FORBIDDEN() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+        Role studentRole = roleRepository.findByName("STUDENT").get();
+        Course course = createCourse("course16", major);
+        course.setUnit(6);
+        courseRepository.save(course);
+        Role teacherRole = roleRepository.findByName("TEACHER").get();
+        Person teacher = createPersonAndAccount("Teacher", "Teacher",List.of(teacherRole) , teacherRole , major);
+        AcademicCalender calender = createCalender(LocalDate.now().plusDays(1),
+                LocalDate.now(),
+                LocalDate.now().plusDays(1),
+                LocalDate.now());
+        Term term = createTerm(major ,calender , Semester.FALL);
+        offeredCourse = createOfferedCourse(teacher , term, course);
+        Person student = createPersonAndAccount("STUDENT", "STUDENT",List.of(studentRole) , studentRole , major);
+        student.setOfferedCourses(List.of(createOfferedCourse(teacher , term, course),createOfferedCourse(teacher , term, course),createOfferedCourse(teacher , term, course)));
+        String token = loginAndGetToken(student.getPhoneNumber(), student.getNationalCode());
+        mockMvc.perform(post("/api/person/take-course/" + offeredCourse.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentGetCourse_FullOfferedCourseCapacity_ShouldReturn_FORBIDDEN() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+        Role studentRole = roleRepository.findByName("STUDENT").get();
+        Course course = createCourse("course16", major);
+        Role teacherRole = roleRepository.findByName("TEACHER").get();
+        Person teacher = createPersonAndAccount("Teacher", "Teacher",List.of(teacherRole) , teacherRole , major);
+        AcademicCalender calender = createCalender(LocalDate.now().plusDays(1),
+                LocalDate.now(),
+                LocalDate.now().plusDays(1),
+                LocalDate.now());
+        Term term = createTerm(major ,calender , Semester.FALL);
+        offeredCourse = createOfferedCourse(teacher , term, course);
+        offeredCourse.setCapacity(0);
+        offeredCourseRepository.save(offeredCourse);
+        Person student = createPersonAndAccount("STUDENT", "STUDENT",List.of(studentRole) , studentRole , major);
+        String token = loginAndGetToken(student.getPhoneNumber(), student.getNationalCode());
+        mockMvc.perform(post("/api/person/take-course/" + offeredCourse.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentGetCourse_StudentMajorNotInOfferedCourseMajor_ShouldReturn_FORBIDDEN() throws Exception {
+        Major major = majorRepository.findByMajorName("Computer").get();
+        Major major2 = majorRepository.save(Major.builder()
+                .majorName("Chemistry-" + UUID.randomUUID())
+                .deleted(false)
+                .build());
+        Role studentRole = roleRepository.findByName("STUDENT").get();
+        Course course = createCourse("course16", major);
+        Role teacherRole = roleRepository.findByName("TEACHER").get();
+        Person teacher = createPersonAndAccount("Teacher", "Teacher",List.of(teacherRole) , teacherRole , major);
+        AcademicCalender calender = createCalender(LocalDate.now().plusDays(1),
+                LocalDate.now(),
+                LocalDate.now().plusDays(1),
+                LocalDate.now());
+        Term term = createTerm(major ,calender , Semester.FALL);
+        offeredCourse = createOfferedCourse(teacher , term, course);
+        offeredCourseRepository.save(offeredCourse);
+        Person student = createPersonAndAccount("STUDENT", "STUDENT",List.of(studentRole) , studentRole , major2);
+        String token = loginAndGetToken(student.getPhoneNumber(), student.getNationalCode());
+        mockMvc.perform(post("/api/person/take-course/" + offeredCourse.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
     }
 
 
@@ -120,6 +287,43 @@ class PersonIntegrationTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void addRoleToPerson_InvalidRoleName_NOTFOUND() throws Exception {
+        Person person = Person.builder()
+                .firstName("Amir Hossein")
+                .lastName("Khanalipour")
+                .phoneNumber(randomPhone())
+                .nationalCode(randomNationalCode())
+                .roles(new ArrayList<>())
+                .build();
+        personRepository.save(person);
+
+        AddRoleRequest request = AddRoleRequest.builder()
+                .role("INVALID")
+                .personId(person.getId())
+                .build();
+
+        mockMvc.perform(post("/api/person/add/person-role")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addRoleToPerson_InvalidPersonId_NOTFOUND() throws Exception {
+        AddRoleRequest request = AddRoleRequest.builder()
+                .role("ADMIN")
+                .personId(999L)
+                .build();
+
+        mockMvc.perform(post("/api/person/add/person-role")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
 
     @Test
     void changeRoleTest() throws Exception {
@@ -133,12 +337,73 @@ class PersonIntegrationTest {
     }
 
     @Test
+    void changeRole_InvalidRole_ShouldReturn_NOTFOUND() throws Exception {
+        ChangeRoleRequestDTO dto = ChangeRoleRequestDTO.builder().role("INVALID").build();
+
+        mockMvc.perform(post("/api/person/change-role")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void changeRole_RoleThatPersonDoNotHad_ShouldReturn_FORBIDDEN() throws Exception {
+        ChangeRoleRequestDTO dto = ChangeRoleRequestDTO.builder().role("TEACHER").build();
+
+        mockMvc.perform(post("/api/person/change-role")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void getRolesTest() throws Exception {
         mockMvc.perform(get("/api/person/person-roles")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk());
     }
+
+
+    @Test
+    void updateProfileTest() throws Exception {
+        UpdateProfileDTO build = UpdateProfileDTO.builder()
+                .firstName("Amir Hossein")
+                .lastName("Khanalipour")
+                .phoneNumber("09342483948")
+                .build();
+        mockMvc.perform(put("/api/person/update-profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(build))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void searchPersons_AsAdmin_ShouldReturnMatchingResults() throws Exception {
+        Role adminRole = roleRepository.findByName("ADMIN").orElseThrow();
+        Person admin = createPersonAndAccount("Admin", "Admin", List.of(adminRole), adminRole, null);
+        String token = loginAndGetToken(admin.getAccount().getUsername(), admin.getNationalCode());
+
+        Role studentRole = roleRepository.findByName("STUDENT").orElseThrow();
+        Major major = majorRepository.findByMajorName("Computer").orElseThrow();
+
+        Person p1 = createPersonAndAccount("Alice", "Smith", List.of(studentRole), studentRole, major);
+        Person p2 = createPersonAndAccount("Bob", "Johnson", List.of(studentRole), studentRole, major);
+        Person p3 = createPersonAndAccount("Charlie", "Brown", List.of(studentRole), studentRole, major);
+
+        mockMvc.perform(get("/api/person/search/{keyword}", "Alice")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].firstName").value("Alice"))
+                .andExpect(jsonPath("$.data[0].lastName").value("Smith"));
+    }
+
 
 
 

@@ -32,22 +32,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class CourseIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-    @Autowired
-    private ObjectMapper objectMapper;
-    @Autowired
-    private RoleRepository roleRepository;
-    @Autowired
-    private PersonRepository personRepository;
-    @Autowired
-    private AccountRepository accountRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private CourseRepository courseRepository;
-    @Autowired
-    private MajorRepository majorRepository;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private RoleRepository roleRepository;
+    @Autowired private PersonRepository personRepository;
+    @Autowired private AccountRepository accountRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private CourseRepository courseRepository;
+    @Autowired private MajorRepository majorRepository;
 
     private String accessToken;
 
@@ -79,6 +71,58 @@ class CourseIntegrationTest {
     }
 
     @Test
+    void saveCourse_MajorDeleted_ShouldReturn_NotFound() throws Exception {
+        Major major = createMajor("Computer" + UUID.randomUUID());
+        major.setDeleted(true);
+        majorRepository.save(major);
+
+        CourseDTO dto = CourseDTO.builder()
+                .title("course1")
+                .unit(2)
+                .description("Course Description")
+                .majorName(major.getMajorName())
+                .build();
+
+        mockMvc.perform(post("/api/course")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void saveCourse_CourseExistInMajor_ShouldReturn_Conflict() throws Exception {
+        Major major = createMajor("Computer" + UUID.randomUUID());
+        majorRepository.save(major);
+
+        CourseDTO dto = CourseDTO.builder()
+                .title("course1")
+                .unit(2)
+                .description("Course Description")
+                .majorName(major.getMajorName())
+                .build();
+
+        mockMvc.perform(post("/api/course")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated());
+
+        CourseDTO dto2 = CourseDTO.builder()
+                .title("course1")
+                .unit(2)
+                .description("Course Description")
+                .majorName(major.getMajorName())
+                .build();
+
+        mockMvc.perform(post("/api/course")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto2))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void updateCourse() throws Exception {
         Major major = createMajor("Accounting");
         Course course = createCourse("Old Title", "Old Desc", major);
@@ -99,6 +143,27 @@ class CourseIntegrationTest {
     }
 
     @Test
+    void updateCourse_CourseIsDeleted_ShouldReturn_NotFound() throws Exception {
+        Major major = createMajor("Accounting");
+        Course course = createCourse("Old Title", "Old Desc", major);
+        course.setDeleted(true);
+        courseRepository.save(course);
+
+        CourseDTO dto = CourseDTO.builder()
+                .title("New Title")
+                .unit(2)
+                .description("New Description")
+                .majorName(major.getMajorName())
+                .build();
+
+        mockMvc.perform(put("/api/course/" + course.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void deleteCourse() throws Exception {
         Major major = createMajor("English");
         Course course = createCourse("To Delete", "Desc", major);
@@ -108,6 +173,13 @@ class CourseIntegrationTest {
                 .andExpect(status().isOk());
 
         Assertions.assertTrue(courseRepository.findById(course.getId()).get().isDeleted());
+    }
+
+    @Test
+    void deleteCourse_InvalidCourseId_ShouldReturn_NotFound() throws Exception {
+        mockMvc.perform(delete("/api/course/" + 99999)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -122,6 +194,13 @@ class CourseIntegrationTest {
     }
 
     @Test
+    void findCourseById_InvalidCourseId_ShouldReturn_NotFound() throws Exception {
+        mockMvc.perform(get("/api/course/" + 9999)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void findAllCourses() throws Exception {
         Major major = createMajor("Math");
         createCourse("C1", "Desc1", major);
@@ -131,6 +210,27 @@ class CourseIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()", greaterThan(1)));
+    }
+
+    @Test
+    void findAllMajorCourses() throws Exception {
+        Major major = createMajor("Math");
+        createCourse("C1", "Desc1", major);
+        createCourse("C2", "Desc2", major);
+
+        mockMvc.perform(get("/api/course/major-courses")
+                        .param("majorName", major.getMajorName())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()", greaterThan(1)));
+    }
+
+    @Test
+    void findAllMajorCourses_InvalidMajorName_ShouldReturn_NOTFOUND() throws Exception {
+        mockMvc.perform(get("/api/course/major-courses")
+                        .param("majorName", "INVALID")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
     }
 
     // ---------------- Helper Methods ----------------

@@ -87,6 +87,20 @@ class AccountIntegrationTest {
     }
 
     @Test
+    void changePassword_InCorrectOldPassword_ShouldReturn_FORBIDEN() throws Exception {
+        String inCorrectOldPassword = "123123";
+        String newPassword = "NewPass123";
+
+        ChangePassDTO dto = new ChangePassDTO(newPassword, inCorrectOldPassword);
+
+        mockMvc.perform(put("/api/account/change-pass")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void activeAccount() throws Exception {
         Account account = createAccountWithState(RegisterState.PENDING);
 
@@ -99,6 +113,17 @@ class AccountIntegrationTest {
     }
 
     @Test
+    void activeAccount_IncorrectAccountId_ShouldReturn_NOTFOUND() throws Exception {
+        long incorrectAccountId = 999L;
+
+        mockMvc.perform(post("/api/account/active-account/" + incorrectAccountId)
+
+                      .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
+    }
+
+
+    @Test
     void inactiveAccount() throws Exception {
         Account account = createAccountWithState(RegisterState.ACTIVE);
 
@@ -108,6 +133,16 @@ class AccountIntegrationTest {
 
         Account updated = accountRepository.findById(account.getId()).orElseThrow();
         assertEquals(RegisterState.INACTIVE, updated.getState());
+    }
+
+    @Test
+    void inActiveAccount_IncorrectAccountId_ShouldReturn_NOTFOUND() throws Exception {
+        long incorrectAccountId = 999L;
+
+        mockMvc.perform(post("/api/account/inactive-account/" + incorrectAccountId)
+
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound());
     }
 
     // ---------------- Helper Methods ----------------
